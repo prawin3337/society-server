@@ -1,7 +1,0 @@
-{
-  "name": "society-managment$",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "angular"
-}
