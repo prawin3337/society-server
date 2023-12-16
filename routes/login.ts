@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { body, validationResult } from 'express-validator';
 import { Member } from "../modules/member";
+import { ApiResponse } from "../modules/response";
 
 const router = Router();
 
@@ -25,17 +26,8 @@ router.post('/', taskValidationRules, (req: Request, res: Response) => {
 router.get('/member-ids', (req: Request, res: Response) => {
     let member = new Member();
     member.getMemberIds((err: any, row: any) => {
-        if (!err) {
-            res.status(200).json({
-                success: true,
-                data: row
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                data: err
-            });
-        }
+        const apiRes = new ApiResponse(err, row);
+        res.status(apiRes.statusCode).json(apiRes.data);
     });
 });
 
