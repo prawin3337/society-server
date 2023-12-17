@@ -8,12 +8,12 @@ const member = new Member();
 
 const { generateAccessToken } = require('../modules/auth.module');
 
-const taskValidationRules = [
+const loginValidationRules = [
     body('flatNo').notEmpty().withMessage('Flat number is required.'),
     body('password').notEmpty().withMessage('Password is required.')
 ];
 
-router.post('/', taskValidationRules, (req: Request, res: Response) => {
+router.post('/', loginValidationRules, (req: Request, res: Response) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -31,7 +31,17 @@ router.get('/member-ids', (req: Request, res: Response) => {
     });
 });
 
-router.post('/validate-pan', (req: Request, res: Response) => {
+const panReqValidationRules = [
+    body('flatNo').notEmpty().withMessage('Flat number is required.'),
+    body('panNo').notEmpty().withMessage('PAN number is required.')
+];
+router.post('/validate-pan', panReqValidationRules, (req: Request, res: Response) => {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     member.getPanNumber(req.body)
         .then((row) => {
             const apiRes = new ApiResponse(null, row);
