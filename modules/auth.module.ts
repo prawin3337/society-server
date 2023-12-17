@@ -6,7 +6,7 @@ process.env.TOKEN_SECRET;
 
 module.exports = {
     generateAccessToken: (props: any) => { // TODO: add interface
-        return jwt.sign(props, process.env.TOKEN_SECRET, { expiresIn: '30m' });
+        return jwt.sign(props, process.env.TOKEN_SECRET, { expiresIn: '8h' });
     },
     authenticateToken: (req: Request, res: Response, next: NextFunction) => {
         const authHeader = req.headers['authorization'];
@@ -15,7 +15,6 @@ module.exports = {
         if (token == null) return res.sendStatus(401)
 
         jwt.verify(token, process.env.TOKEN_SECRET, (err: any, user: any) => { //TODO: add interface
-            console.log(err)
 
             if (err) return res.status(403).json({ success: false, error: err.message });
 

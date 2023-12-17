@@ -1,23 +1,16 @@
 import mysql from "mysql2";
 
-export default mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "password",
-    database: "society-db"
-});
-
 export class DbConnect {
-    dbConnection: any;
+    connect: any;
     constructor() {
-        this.dbConnection = mysql.createConnection({
+        this.connect = mysql.createConnection({
             host: "localhost",
             user: "root",
-            password: "password",
+            password: process.env.DB_PASSWORD,
             database: "society-db"
         })
 
-        this.dbConnection.connect((err: any) => {
+        this.connect.connect((err: any) => {
             if (!err) {
                 console.log("DB connected.");
             } else {

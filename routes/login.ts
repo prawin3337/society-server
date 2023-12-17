@@ -4,11 +4,12 @@ import { Member } from "../modules/member";
 import { ApiResponse } from "../modules/response";
 
 const router = Router();
+const member = new Member();
 
 const { generateAccessToken } = require('../modules/auth.module');
 
 const taskValidationRules = [
-    body('id').notEmpty().withMessage('ID is required.'),
+    body('flatNo').notEmpty().withMessage('Flat number is required.'),
     body('password').notEmpty().withMessage('Password is required.')
 ];
 
@@ -24,11 +25,22 @@ router.post('/', taskValidationRules, (req: Request, res: Response) => {
 });
 
 router.get('/member-ids', (req: Request, res: Response) => {
-    let member = new Member();
     member.getMemberIds((err: any, row: any) => {
         const apiRes = new ApiResponse(err, row);
         res.status(apiRes.statusCode).json(apiRes.data);
     });
+});
+
+router.post('/validate-pan', (req: Request, res: Response) => {
+    member.getPanNumber(req.body)
+        .then((row) => {
+            const apiRes = new ApiResponse(null, row);
+            res.status(apiRes.statusCode).json(apiRes.data);
+        })
+        .catch((err) => {
+            const apiRes = new ApiResponse(err, {});
+            res.status(apiRes.statusCode).json(apiRes.data);
+        });
 });
 
 module.exports = router;
