@@ -1,12 +1,12 @@
 import { Router, Request, Response } from "express";
 import { body, validationResult } from 'express-validator';
-import { Member } from "../modules/member";
-import { ApiResponse } from "../modules/response";
+import { Member } from "../modules/member.module";
+import { ApiResponse } from "../modules/response.module";
 
 const router = Router();
 const member = new Member();
 
-const { generateAccessToken } = require('../modules/auth.module');
+const { AuthModule } = require('../modules/auth.module');
 
 const loginValidationRules = [
     body('flatNo').notEmpty().withMessage('Flat number is required.'),
@@ -20,7 +20,7 @@ router.post('/', loginValidationRules, (req: Request, res: Response) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const tokan = generateAccessToken(req.body);
+    const tokan = new AuthModule().generateAccessToken(req.body);
     res.status(200).json({tokan});
 });
 
