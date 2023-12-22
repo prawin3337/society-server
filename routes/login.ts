@@ -9,7 +9,7 @@ const member = new Member();
 const { AuthModule } = require('../modules/auth.module');
 
 const loginValidationRules = [
-    body('flatNo').notEmpty().withMessage('Flat number is required.'),
+    body('userId').notEmpty().withMessage('User ID is required.'),
     body('password').notEmpty().withMessage('Password is required.')
 ];
 
@@ -20,15 +20,14 @@ router.post('/', loginValidationRules, (req: Request, res: Response) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const tokan = new AuthModule().generateAccessToken(req.body);
-    res.status(200).json({tokan});
-});
-
-router.get('/member-ids', (req: Request, res: Response) => {
-    member.getMemberIds((err: any, row: any) => {
-        const apiRes = new ApiResponse(err, row);
-        res.status(apiRes.statusCode).json(apiRes.data);
-    });
+    member.validateUser(req.body)
+        .then((obj) => {
+            const tokan = new AuthModule().generateAccessToken(obj);
+            res.status(200).json({ tokan });
+        })
+        .catch((err) => {
+            res.status(401).json({ message: err });
+        });
 });
 
 const panReqValidationRules = [

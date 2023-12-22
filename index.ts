@@ -42,6 +42,9 @@ app.use('/api/auth', auth);
 const flat = require('./routes/flat');
 app.use('/api/flats', flat);
 
+const members = require('./routes/member');
+app.use('/api/members', members);
+
 // const userRouter = require('./routes/user');
 // app.use('/user', userRouter);
 

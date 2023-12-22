@@ -1,23 +1,25 @@
 const mysqlConnection = require('./db-connection');
 import { transformMap } from "../util";
+const bcrypt = require('bcrypt');
 
 export class Member {
     constructor() {
 
     }
     getMemberIds(calback: CallableFunction):void {
-        mysqlConnection.query("SELECT `flat_no`, `password` FROM `member` where disabled IS NULL OR disabled!='y';", (err: any, row: any) => {
+        mysqlConnection.query("SELECT `flat_no`, `password`, `user_id` FROM `member` where disabled IS NULL OR disabled!='y';", (err: any, row: any) => {
 
             if (!err) {
                 row.map((obj: any) => {
-                    obj.isRegistered = !!obj.password;
+                    obj['is_registered'] = !!obj.password;
                     delete obj.password;
                     return obj;
                 });
 
                 const map = new Map([
                     ['flat_no', 'flatNo'],
-                    ['isRegistered', 'isRegistered']
+                    ['is_registered', 'isRegistered'],
+                    ['user_id', 'userId']
                 ]);
                 const result = transformMap(row, map);
                 calback(null, result);
@@ -39,5 +41,34 @@ export class Member {
                 }
             });
         })
+    }
+
+    validateUser(params: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const { userId, password } = params;
+            mysqlConnection.query("SELECT * FROM `member` where `user_id`=?",
+                [userId], (err: any, row: any) => {
+                    if (!err) {
+                        const map = new Map([
+                            ['flat_no', 'flatNo'],
+                            ['is_registered', 'isRegistered'],
+                            ['user_id', 'userId'],
+                            ['password', 'password']
+                        ]);
+                        const result: any = transformMap(row, map);
+                        const hash = result[0].password;
+                        const validUser = bcrypt.compareSync(password, hash);
+                        if (validUser) {
+                            const {userId, flatNo} = result[0];
+                            resolve({ userId, flatNo });
+                        } else {
+                            reject("User id or password is not correct!");
+                        }
+                        
+                    } else {
+                        reject(err);
+                    }
+                });
+        });
     }
 }
