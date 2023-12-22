@@ -1,15 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { DbConnect } from "./db-connection";
+const mysqlConnection = require('./db-connection');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 export class AuthModule {
 
-    dbConnect: DbConnect;
-
-    constructor() {
-        this.dbConnect = new DbConnect();
-    }
+    constructor() {}
 
     generateAccessToken(props: any) { // TODO: add interface
         return jwt.sign(props, process.env.TOKEN_SECRET, { expiresIn: '8h' });
@@ -43,7 +39,7 @@ export class AuthModule {
                     rej(err);
                 }
 
-                this.dbConnect.connect.query("update `member` set `password`=? where `flat_no`=?",
+                mysqlConnection.query("update `member` set `password`=? where `flat_no`=?",
                     [hash, flatNo], (err: any, row: any) => {
                         if (!err) {
                             res({ message: "Password updated." });

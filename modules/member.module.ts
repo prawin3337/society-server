@@ -1,21 +1,20 @@
-import { DbConnect } from "./db-connection";
+const mysqlConnection = require('./db-connection');
 import { transformMap } from "../util";
 
 export class Member {
-    DbConnect = new DbConnect();
     constructor() {
 
     }
     getMemberIds(calback: CallableFunction):void {
-        this.DbConnect.connect.query("SELECT `flat_no`, `password` FROM `member`;", (err: any, row: any) => {
-
-            row.map((obj:any) => {
-                obj.isRegistered = !!obj.password;
-                delete obj.password;
-                return obj;
-            });
+        mysqlConnection.query("SELECT `flat_no`, `password` FROM `member` where disabled IS NULL OR disabled!='y';", (err: any, row: any) => {
 
             if (!err) {
+                row.map((obj: any) => {
+                    obj.isRegistered = !!obj.password;
+                    delete obj.password;
+                    return obj;
+                });
+
                 const map = new Map([
                     ['flat_no', 'flatNo'],
                     ['isRegistered', 'isRegistered']
@@ -31,7 +30,7 @@ export class Member {
     getPanNumber(params: any): Promise<any> {
         return new Promise((res, rej) => {
             const { flatNo, panNo } = params;
-            this.DbConnect.connect.query("SELECT `pan` FROM `member` where `flat_no`=?",
+            mysqlConnection.query("SELECT `pan` FROM `member` where `flat_no`=?",
                 [flatNo], (err: any, row: any) => {
                 if (!err) {
                     res({isValidPan: row[0].pan === panNo});
