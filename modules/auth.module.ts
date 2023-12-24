@@ -11,19 +11,16 @@ export class AuthModule {
         return jwt.sign(props, process.env.TOKEN_SECRET, { expiresIn: '8h' });
     }
 
-    authenticateToken(req: Request, res: Response, next: NextFunction)  {
+    authenticateToken(req: any, res: any, next: NextFunction)  {
         const authHeader = req.headers['authorization'];
         const token = authHeader; //authHeader && authHeader.split(' ')[1]
 
         if (token == null) return res.sendStatus(401)
 
-        jwt.verify(token, process.env.TOKEN_SECRET, (err: any, user: any) => { //TODO: add interface
-
+        jwt.verify(token, process.env.TOKEN_SECRET, (err: any, data: any) => { // TODO: add interface
             if (err) return res.status(403).json({ success: false, error: err.message });
-
-            // req.user = user
-
-            next()
+            req['sessionData'] = data;
+            next();
         })
     }
 
