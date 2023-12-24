@@ -45,6 +45,9 @@ app.use('/api/flats', flat);
 const members = require('./routes/member');
 app.use('/api/members', members);
 
+
+const transaction = require('./routes/transaction');
+app.use('/api/transaction', transaction);
 // const userRouter = require('./routes/user');
 // app.use('/user', userRouter);
 
