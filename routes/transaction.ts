@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express";
 import { Member } from "../modules/member.module";
 import { ApiResponse } from "../modules/response.module";
 import { AuthModule } from "../modules/auth.module";
+import { body, header, validationResult, param } from 'express-validator';
 
 const router = Router();
 const multer = require('multer');
@@ -23,7 +24,17 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage }).single("photo");
 
-router.post('/', authModule.authenticateToken ,(req: any, res: any, next) => {
+const taskValidationRules = [
+    body('amount').notEmpty().withMessage('Amount is required.'),
+    body('transactionCode').notEmpty().withMessage('Transaction No is required.'),
+    body('receiptNumber').notEmpty().withMessage('receiptNumber No is required.')
+];
+router.post('/', authModule.authenticateToken, taskValidationRules, (req: any, res: any, next: any) => {
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //     return res.status(400).json({ errors: errors.array() });
+    // }
+
     upload(req, res, (err: any) => {
         if (err) {
             res.status(501).json({ err });

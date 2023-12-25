@@ -30,6 +30,11 @@ const passwordUpdateRules = [
 ]
 router.patch('/update-password', passwordUpdateRules, (req: Request, res: Response) => {
 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { flatNo, panNo, password } = req.body;
     
     new Member().getPanNumber({ flatNo, panNo })

@@ -53,14 +53,15 @@ export class Member {
                             ['flat_no', 'flatNo'],
                             ['is_registered', 'isRegistered'],
                             ['user_id', 'userId'],
-                            ['password', 'password']
+                            ['password', 'password'],
+                            ['type', 'type']
                         ]);
                         const result: any = transformMap(row, map);
                         const hash = result[0].password;
                         const validUser = bcrypt.compareSync(password, hash);
                         if (validUser) {
-                            const {userId, flatNo} = result[0];
-                            resolve({ userId, flatNo });
+                            const {userId, flatNo, type} = result[0];
+                            resolve({ userId, flatNo, type });
                         } else {
                             reject("User id or password is not correct!");
                         }

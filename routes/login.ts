@@ -23,7 +23,7 @@ router.post('/', loginValidationRules, (req: Request, res: Response) => {
     member.validateUser(req.body)
         .then((obj) => {
             const tokan = new AuthModule().generateAccessToken(obj);
-            res.status(200).json({ tokan });
+            res.status(200).json({ tokan, userInfo: obj});
         })
         .catch((err) => {
             res.status(401).json({ message: err });
