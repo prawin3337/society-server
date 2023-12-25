@@ -4,6 +4,7 @@ import { Member } from "../modules/member.module";
 import { ApiResponse } from "../modules/response.module";
 import { AuthModule } from "../modules/auth.module";
 import { body, header, validationResult, param } from 'express-validator';
+import { TransactionModule } from "../modules/transaction.module";
 
 const router = Router();
 const multer = require('multer');
@@ -22,26 +23,35 @@ const storage = multer.diskStorage({
     }
 })
 
-const upload = multer({ storage: storage }).single("photo");
-
-const taskValidationRules = [
-    body('amount').notEmpty().withMessage('Amount is required.'),
-    body('transactionCode').notEmpty().withMessage('Transaction No is required.'),
-    body('receiptNumber').notEmpty().withMessage('receiptNumber No is required.')
-];
-router.post('/', authModule.authenticateToken, taskValidationRules, (req: any, res: any, next: any) => {
-    // const errors = validationResult(req);
-    // if (!errors.isEmpty()) {
-    //     return res.status(400).json({ errors: errors.array() });
-    // }
-
+router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) => {
+    const upload = multer({ storage: storage }).single("photo");
     upload(req, res, (err: any) => {
-        if (err) {
+        const { userId } = req.sessionData;
+        const { flatNo, amount, transactionCode, transactionDate, 
+            transactionType, isCredit, description, receiptNumber } = req.body;
+
+        if (!flatNo || !amount || !transactionCode || !transactionDate || !transactionType) {
+            res.status(501).json({ err: "Please fill all requred fields." });
+            return;
+        } else if (err) {
             res.status(501).json({ err });
+            return;
         }
-        console.log(req.body);
-        console.log(req.file);
-        res.send({});
+
+        const { filename: photo } = req.file;
+        const params = {flatNo, amount, transactionCode, receiptNumber, photo,
+            transactionDate, transactionType, userId, isCredit, description};
+
+        const tranactionModule = new TransactionModule();
+        tranactionModule.addTransaction(params)
+            .then((row) => {
+                const apiRes = new ApiResponse(null, row);
+                res.status(apiRes.statusCode).json(apiRes.data);
+            }).catch((err) => {
+                const apiRes = new ApiResponse(err, {});
+                res.status(apiRes.statusCode).json(apiRes.data);
+            });
+        
     });
 });
 
