@@ -38,7 +38,7 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
             return;
         }
 
-        const { filename: photo } = req.file;
+        const { filename: photo } = req.file || "";
         const params = {flatNo, amount, transactionCode, receiptNumber, photo,
             transactionDate, transactionType, userId, isCredit, description};
 
