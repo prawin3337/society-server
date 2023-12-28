@@ -9,6 +9,8 @@ import { TransactionModule } from "../modules/transaction.module";
 const router = Router();
 const multer = require('multer');
 
+const tranactionModule = new TransactionModule();
+
 const authModule = new AuthModule();
 
 const storage = multer.diskStorage({
@@ -42,7 +44,6 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
         const params = {flatNo, amount, transactionCode, receiptNumber, photo,
             transactionDate, transactionType, userId, isCredit, description};
 
-        const tranactionModule = new TransactionModule();
         tranactionModule.addTransaction(params)
             .then((row) => {
                 const apiRes = new ApiResponse(null, row);
@@ -53,6 +54,18 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
             });
         
     });
+});
+
+router.get("/all", authModule.authenticateToken, (req: any, res: any, next: any) => {
+    const flatNo = req.query.flatNo;
+    tranactionModule.getTransactions(flatNo)
+        .then((row) => {
+            const apiRes = new ApiResponse(null, row);
+            res.status(apiRes.statusCode).json(apiRes.data);
+        }).catch((err) => {
+            const apiRes = new ApiResponse(err, {});
+            res.status(apiRes.statusCode).json(apiRes.data);
+        });
 });
 
 module.exports = router;

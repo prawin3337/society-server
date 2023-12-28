@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { transformMap } from "../util";
 const mysqlConnection = require('./db-connection');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
@@ -29,6 +30,37 @@ export class TransactionModule {
                     rej(err);
                 }
             });
+        });
+    }
+
+    getTransactions(flatNo: string) {
+        return new Promise((res, rej) => {
+            const query = "select * from transaction_master where flat_no=? order by transaction_date desc";
+            mysqlConnection.query(query, [flatNo], (err: any, row: any) => {
+                if (!err) {
+                    const map = new Map([
+                        ['id', 'id'],
+                        ['amount', 'amount'],
+                        ['description', 'description'],
+                        ['date', 'date'],
+                        ['transaction_code', 'transactionCode'],
+                        ['transaction_date', 'transactionDate'],
+                        ['type', 'type'],
+                        ['is_credit', 'isCredit'],
+                        ['receipt_number', 'receiptNumber'],
+                        ['flat_no', 'flatNo'],
+                        ['photo', 'photo'],
+                        ['user_id', 'userId'],
+                        ['is_appoved', 'isAppoved'],
+                        ['apporved_by', 'apporvedBy']
+                    ]);
+                    const result: any = transformMap(row, map);
+                    res(result);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
         });
     }
 }
