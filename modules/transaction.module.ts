@@ -33,10 +33,13 @@ export class TransactionModule {
         });
     }
 
-    getTransactions(flatNo: string) {
+    getTransactions(flatNo: string, financYear: {fromDate: Date, toDate:Date}) {
+        const {fromDate, toDate } = financYear;
         return new Promise((res, rej) => {
-            const query = "select * from transaction_master where flat_no=? order by transaction_date desc";
-            mysqlConnection.query(query, [flatNo], (err: any, row: any) => {
+            const query = "select * from transaction_master where flat_no=? and "
+                +"transaction_date between ? and ? order by transaction_date desc";
+            console.log(query);
+            mysqlConnection.query(query, [flatNo, fromDate, toDate], (err: any, row: any) => {
                 if (!err) {
                     const map = new Map([
                         ['id', 'id'],
@@ -52,7 +55,7 @@ export class TransactionModule {
                         ['photo', 'photo'],
                         ['user_id', 'userId'],
                         ['is_appoved', 'isAppoved'],
-                        ['apporved_by', 'apporvedBy']
+                        ['checker', 'checker']
                     ]);
                     const result: any = transformMap(row, map);
                     res(result);

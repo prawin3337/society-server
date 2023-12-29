@@ -58,7 +58,9 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
 
 router.get("/all", authModule.authenticateToken, (req: any, res: any, next: any) => {
     const flatNo = req.query.flatNo;
-    tranactionModule.getTransactions(flatNo)
+    const financYear = JSON.parse(req.query.financYear);
+
+    tranactionModule.getTransactions(flatNo, financYear)
         .then((row) => {
             const apiRes = new ApiResponse(null, row);
             res.status(apiRes.statusCode).json(apiRes.data);
