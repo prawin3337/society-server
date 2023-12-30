@@ -8,38 +8,36 @@ export class TransactionModule {
 
     private map = new Map([
         ['id', 'id'],
-        ['amount', 'amount'],
+        ['credit_amount', 'creditAmount'],
+        ['debit_amount', 'debitAmount'],
         ['description', 'description'],
         ['date', 'date'],
         ['transaction_code', 'transactionCode'],
         ['transaction_date', 'transactionDate'],
         ['type', 'type'],
-        ['is_credit', 'isCredit'],
         ['receipt_number', 'receiptNumber'],
         ['flat_no', 'flatNo'],
         ['photo', 'photo'],
         ['user_id', 'userId'],
         ['is_appoved', 'isAppoved'],
-        ['checker', 'checker'],
-        ['balance_amt', 'balanceAmt']
+        ['checker', 'checker']
     ]);
 
     constructor() { }
 
     addTransaction(params: any) {
         return new Promise((res, rej) => {
-            const { flatNo, amount, transactionCode, transactionDate, photo,
+            const { flatNo, creditAmount: creditAmount, transactionCode, transactionDate, photo,
                 transactionType, userId, description, isCredit, receiptNumber } = params;
             const systemDate = `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`;
             
             const query = "INSERT INTO `transaction_master`"
-                         +"(`amount`, `description`, `date`, `user_id`, `transaction_code`,"
-                         +"`transaction_date`, `type`, `is_credit`, `flat_no`, `receipt_number`,"
-                         +"`photo`, `balance_amt`)"
-                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                         +"(`credit_amount`, `description`, `date`, `user_id`, `transaction_code`,"
+                         +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`)"
+                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-            const queryParams = [amount, description, systemDate, userId, transactionCode,
-                transactionDate, transactionType, isCredit, flatNo, receiptNumber, photo, amount];
+            const queryParams = [creditAmount, description, systemDate, userId, transactionCode,
+                transactionDate, transactionType, flatNo, receiptNumber, photo];
         
             mysqlConnection.query(query, queryParams, (err: any, row: any) => {
                 if (!err) {
@@ -49,6 +47,20 @@ export class TransactionModule {
                     rej(err);
                 }
             });
+        });
+    }
+
+    getTotalCreditAmt(flatNo: string) {
+        return new Promise((res, rej) => {
+            const query = "select sum(credit_amount) as creditAmount from transaction_master where flat_no=?";
+            mysqlConnection.query(query, [flatNo], (err: any, row: any) => {
+                if (!err) {
+                    res(row);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
         });
     }
 

@@ -1,6 +1,6 @@
 export const maintenanceRules = {
     maintenanceDetails: {
-        amount: 1500,
+        creditAmount: 1500,
         ruleDate: "2021-12-01"
     },
     latePayment: {
