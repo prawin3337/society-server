@@ -1,3 +1,15 @@
+export const maintenanceRules = {
+    maintenanceDetails: {
+        amount: 1500,
+        ruleDate: "2021-12-01"
+    },
+    latePayment: {
+        penaltyAmt: 100,
+        ruleDate: "2023-05-01",
+        applied: "per-month"
+    }
+}
+
 export function transformKeys(mapObj: any, obj: any) {
     return Object.fromEntries(
         Object.entries(obj)
