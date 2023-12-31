@@ -1,10 +1,12 @@
 import { Router, Request, Response } from "express";
 import { ApiResponse } from "../modules/response.module";
 import { MaintenanceModule } from "../modules/maintenance.module";
+import { AuthModule } from "../modules/auth.module";
 
 const router = Router();
+const authModule = new AuthModule();
 
-router.post('/calculate', (req: Request, res: Response) => {
+router.post('/calculate', (req: any, res: Response) => {
     const {flatNo} = req.body;
     new MaintenanceModule()
         .getMaintenanceAmt(flatNo)
