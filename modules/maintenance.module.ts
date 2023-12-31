@@ -24,6 +24,36 @@ export class MaintenanceModule {
         });
     }
 
+    private fetchAllTransactions(flatNo: string) {
+        return new Promise((res, rej) => {
+            this.transactionModule
+                .getAllTransactions(flatNo)
+                .then((result: any) => {
+                    res(result)
+                })
+                .catch((err) => {
+                    console.log(err);
+                    rej(err);
+                });
+        });
+    }
+
+    private getNoPenaltyAmt(flatNo: string) {
+        return new Promise((resolve, reject) => {
+            this.fetchAllTransactions(flatNo)
+                .then((data: any) => {
+                    const latPaydate = maintenanceRules.latePayment.ruleDate.getTime();
+                    const noPenaltyAmt = data.filter((obj: any) => {
+                        const tranDate = new Date(obj.transactionDate).getTime();
+                        return (tranDate <= latPaydate);
+                    })
+                    .reduce((prevTran: any, curTran: any) => prevTran + Number(curTran.creditAmount), 0);
+                    resolve(noPenaltyAmt);
+                })
+                .catch((err) => {reject(err)});
+        });
+    }
+
     private fetchMaintenanceDetails(flatNo: string) {
         const map = new Map([
             ['id', 'id'],
@@ -92,20 +122,25 @@ export class MaintenanceModule {
             const mainAmt = maintenanceRules.maintenanceDetails.creditAmount; // 1500
             const transactionDet = this.fetchTotalCreditAmt(flatNo);
             const maintainanceDet = this.fetchMaintenanceDetails(flatNo);
+            const noPenaltyDet = this.getNoPenaltyAmt(flatNo);
 
-            Promise.all([transactionDet, maintainanceDet])
+            Promise.all([transactionDet, maintainanceDet, noPenaltyDet])
                 .then((data) => {
                     const transactionData: any = data[0];
                     const maintainanceDet: any = data[1];
+                    const noPenaltyAmt: any = data[2];
 
                     const { creditAmount } = transactionData;
                     const { pendingMonths, totalMaintanceAmt } = maintainanceDet;
+
+                    console.log(pendingMonths);
 
                     let diffAmt = creditAmount - totalMaintanceAmt;
 
                     const maintainance = pendingMonths.map((date: any, index: number) => {
                         let maintainanceAmt = 0;
                         const penaltyAmt = maintenanceRules.latePayment.penaltyAmt;
+                        const penaltyMonthCnt = (pendingMonths.length - index);
                         let penaltyTotal = (pendingMonths.length - index) * penaltyAmt;
 
                         if ((mainAmt + penaltyTotal) <= diffAmt) {
@@ -116,7 +151,9 @@ export class MaintenanceModule {
                         const newRow = {
                             maintainanceAmt,
                             date: date,
-                            penaltyTotal
+                            penaltyTotal,
+                            penaltyMonthCnt,
+                            penaltyFromTo: `${pendingMonths[index]}-${pendingMonths[pendingMonths.length-1]}`
                         }
                         return newRow;
                     })
