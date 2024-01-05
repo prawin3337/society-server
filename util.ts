@@ -5,7 +5,8 @@ export const maintenanceRules = {
     },
     latePayment: {
         penaltyAmt: 100,
-        ruleDate: new Date("2023-05-01"),
+        latePayDate: 15,
+        ruleDate: new Date("2023-05-15 23:59:59"),
         applied: "per-month"
     }
 }
@@ -23,4 +24,11 @@ export function transformMap(data: any[], map: Map<string, string>): any[] {
         result.push(transformKeys(map, o));
     });
     return result;
+}
+
+export function transformDate(date: Date) {
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    return `${date.getDate()}-${monthNames[date.getMonth()]}-${date.getFullYear()}`;
 }

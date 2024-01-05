@@ -1,6 +1,6 @@
 import { TransactionModule } from "./transaction.module";
 const mysqlConnection = require('./db-connection');
-import { transformMap, maintenanceRules } from "../util";
+import { transformMap, maintenanceRules, transformDate } from "../util";
 
 export class MaintenanceModule {
 
@@ -13,7 +13,7 @@ export class MaintenanceModule {
     private fetchTotalCreditAmt(flatNo: string) {
         return new Promise((res, rej) => {
             this.transactionModule
-                .getTotalCreditAmt(flatNo)
+                .getTotalValidCredAmt(flatNo)
                 .then((result: any) => {
                     res(result[0])
                 })
@@ -38,38 +38,20 @@ export class MaintenanceModule {
         });
     }
 
-    private getNoPenaltyAmt(flatNo: string) {
-        return new Promise((resolve, reject) => {
-            this.fetchAllTransactions(flatNo)
-                .then((data: any) => {
-                    const latPaydate = maintenanceRules.latePayment.ruleDate.getTime();
-                    const noPenaltyAmt = data.filter((obj: any) => {
-                        const tranDate = new Date(obj.transactionDate).getTime();
-                        return (tranDate <= latPaydate);
-                    })
-                    .reduce((prevTran: any, curTran: any) => prevTran + Number(curTran.creditAmount), 0);
-                    resolve(noPenaltyAmt);
-                })
-                .catch((err) => {reject(err)});
-        });
-    }
-
     private fetchMaintenanceDetails(flatNo: string) {
         const map = new Map([
             ['id', 'id'],
             ['date', 'date'],
             ['flat_no', 'flatNo'],
-            ['user_id', 'userId'],
-            ['penalty_id', 'penaltyId'],
             ['maintainance_amt', 'maintainanceAmt']
         ]);
 
-        const query = "select * from maintainance_master where flat_no=?";
+        const query = "select id, DATE_FORMAT(date, '%Y-%m-%d') AS date,flat_no,maintainance_amt from maintainance_master where flat_no=?";
         return new Promise((res, rej) => {
             mysqlConnection.query(query, [flatNo], (err: any, row: any) => {
                 if (!err) {
                     const result: any = transformMap(row, map);
-                    const totalMaintanceAmt = result.reduce((a: any, b: any) => a + b.maintainanceAmt, 0)
+                    const totalMaintanceAmt = result.reduce((a: any, b: any) => a + b.maintainanceAmt, 0);
                     const data = this.getMaintenanceDetails(result);
                     res({ ...data, result, totalMaintanceAmt });
                 } else {
@@ -82,7 +64,9 @@ export class MaintenanceModule {
 
     private getMaintenanceDetails(data: any[]) {
         const lastMaintenance = this.getLastMaintenance(data);
-        const pendingMainMonths = this.getPendingMainMonths(lastMaintenance.date);
+        // console.log("obj= lastMaintenance", lastMaintenance);
+        const lMDate = new Date(lastMaintenance.date);
+        const pendingMainMonths = this.getPendingMainMonths(lMDate);
         return pendingMainMonths;
     }
 
@@ -94,6 +78,7 @@ export class MaintenanceModule {
     }
 
     private getPendingMainMonths(lastMaintenanceDate: Date = this.lastMaintenanceDate) {
+        // console.log("obj= lastMaintenanceDate", lastMaintenanceDate);
         const curDate = new Date();
         let months = (curDate.getFullYear() - lastMaintenanceDate.getFullYear()) * 12;
         months -= lastMaintenanceDate.getMonth() + 1;
@@ -130,33 +115,67 @@ export class MaintenanceModule {
         });
     }
 
+    private getNoPenaltyAmt(date: any, allTransactions: any) {
+        const newTransactions = allTransactions;
+
+        const { ruleDate, latePayDate } = maintenanceRules.latePayment;
+        const validTrans = newTransactions.filter((obj: any) => obj.isApproved == 'y');
+
+        const noPenaltyMon = validTrans.filter((obj: any) => {
+            const tranDate = new Date(obj.transactionDate);
+            let noPen = false;
+
+            if ((tranDate.getTime() < ruleDate.getTime())) {
+                noPen = true;
+                return noPen;
+            }
+
+            if (tranDate.getTime() < date.getTime()) {
+                noPen = true;
+            }
+
+            return noPen;
+        });
+        const noPenaltyAmt = noPenaltyMon
+            .reduce((prevTran: any, curTran: any) => {
+                return (prevTran + Number(curTran.creditAmount))
+            }, 0);
+
+        return noPenaltyAmt;
+    }
+
     private precessMaintenance(flatNo: string) {
         return new Promise((resolve, reject) => {
             this.deleteZeroMaintenance(flatNo)
                 .then((deleteRec) => {
-                    console.log("Deleted zero maintenace records:", deleteRec);
+                    // console.log("Deleted zero maintenace records:", deleteRec);
 
                     const mainAmt = maintenanceRules.maintenanceDetails.creditAmount; // 1500
                     const transactionDet = this.fetchTotalCreditAmt(flatNo);
                     const maintainanceDet = this.fetchMaintenanceDetails(flatNo);
-                    const noPenaltyDet = this.getNoPenaltyAmt(flatNo);
+                    const transactions = this.fetchAllTransactions(flatNo);
 
-                    Promise.all([transactionDet, maintainanceDet, noPenaltyDet])
+                    Promise.all([transactionDet, maintainanceDet, transactions])
                         .then((data) => {
                             const transactionData: any = data[0];
                             const maintainanceDet: any = data[1];
-                            const noPenaltyAmt: any = data[2];
+                            const allTransactions: any = data[2];
 
                             const { creditAmount } = transactionData;
                             const { pendingMonths, totalMaintanceAmt } = maintainanceDet;
 
-                            const noPenaltyMonthCnt = Math.trunc((noPenaltyAmt - totalMaintanceAmt) / mainAmt);
-
                             let diffAmt = creditAmount - totalMaintanceAmt;
 
                             const maintainance = pendingMonths.map((date: any, index: number) => {
-                                let maintainanceAmt = 0;
+
                                 const penaltyAmt = maintenanceRules.latePayment.penaltyAmt;
+                                const noPenaltyAmt = this.getNoPenaltyAmt(date, allTransactions);
+
+                                const newNoPenaltyAmt = noPenaltyAmt - totalMaintanceAmt;
+
+                                const noPenaltyMonthCnt = Math.trunc(newNoPenaltyAmt / mainAmt);
+
+                                let maintainanceAmt = 0;
                                 let penaltyFromTo = "";
                                 let penaltyMonCnt = 0;
 
@@ -164,7 +183,7 @@ export class MaintenanceModule {
                                 if (index >= noPenaltyMonthCnt) {
                                     penaltyMonCnt = (pendingMonths.length - index);
                                     penaltyTotal = (penaltyMonCnt * penaltyAmt);
-                                    penaltyFromTo = `${pendingMonths[index]}-${pendingMonths[pendingMonths.length - 1]}`;
+                                    penaltyFromTo = `${transformDate(pendingMonths[index])}-${transformDate(pendingMonths[pendingMonths.length - 1])}`;
                                 }
 
                                 if ((mainAmt + penaltyTotal) <= diffAmt) {

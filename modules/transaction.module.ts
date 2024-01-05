@@ -19,7 +19,7 @@ export class TransactionModule {
         ['flat_no', 'flatNo'],
         ['photo', 'photo'],
         ['user_id', 'userId'],
-        ['is_appoved', 'isAppoved'],
+        ['is_approved', 'isApproved'],
         ['checker', 'checker']
     ]);
 
@@ -53,6 +53,20 @@ export class TransactionModule {
     getTotalCreditAmt(flatNo: string) {
         return new Promise((res, rej) => {
             const query = "select sum(credit_amount) as creditAmount from transaction_master where flat_no=?";
+            mysqlConnection.query(query, [flatNo], (err: any, row: any) => {
+                if (!err) {
+                    res(row);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
+        });
+    }
+
+    getTotalValidCredAmt(flatNo: string) {
+        return new Promise((res, rej) => {
+            const query = "select sum(credit_amount) as creditAmount from transaction_master where is_approved='y' and flat_no=?";
             mysqlConnection.query(query, [flatNo], (err: any, row: any) => {
                 if (!err) {
                     res(row);
