@@ -125,10 +125,6 @@ export class MaintenanceModule {
             const tranDate = new Date(obj.transactionDate);
             let noPen = false;
 
-            console.log("trans=", obj);
-            console.log("tempMaintAmt=", tempMaintAmt);
-            console.log("=================================");
-
             if ((tranDate.getTime() < ruleDate.getTime())) {
                 noPen = true;
                 return noPen;
@@ -166,55 +162,80 @@ export class MaintenanceModule {
                             const maintainanceDet: any = data[1];
                             const allTransactions: any = data[2];
 
-                            const { creditAmount } = transactionData;
+                            const { ruleDate, latePayDate } = maintenanceRules.latePayment;
+
+                            // const { creditAmount } = transactionData;
                             // console.log("creditAmount=", creditAmount);
-                            const { pendingMonths, totalMaintanceAmt } = maintainanceDet;
-                            // console.log("totalMaintanceAmt=", totalMaintanceAmt);
+                            let { pendingMonths, totalMaintanceAmt } = maintainanceDet;
+                            console.log("totalMaintanceAmt=", totalMaintanceAmt);
 
-                            let diffAmt = creditAmount - totalMaintanceAmt;
-                            let tempMaintAmt = totalMaintanceAmt;
-                            // console.log("diffAmt=", diffAmt);
+                            let maintainanceArr: any = [];
 
-                            const maintainance = pendingMonths.map((pendingMonDate: any, index: number) => {
+                            // console.log("allTransactions=", allTransactions);
+                            // console.log("================================");
+                            // console.log("pendingMonths=", pendingMonths);
 
-                                const penaltyAmt = maintenanceRules.latePayment.penaltyAmt; //100
-                                // console.log("date=", date);
-                                const noPenaltyAmt = this.getNoPenaltyAmt(pendingMonDate, allTransactions, tempMaintAmt);
+                            let balAmount = 0;
 
-                                const newNoPenaltyAmt = noPenaltyAmt - totalMaintanceAmt;
-                                // console.log("newNoPenaltyAmt=", newNoPenaltyAmt);
+                            allTransactions.forEach((transaction: any, tranIndex: number) => {
 
-                                const noPenaltyMonthCnt = Math.trunc(newNoPenaltyAmt / mainAmt);
-                                // console.log("noPenaltyMonthCnt=", noPenaltyMonthCnt);
+                                const tranDate = transaction.transactionDate;
 
-                                let maintainanceAmt = 0;
-                                let penaltyFromTo = "";
-                                let penaltyMonCnt = 0;
-
-                                let penaltyTotal = 0;
-                                if (index >= noPenaltyMonthCnt) {
-                                    penaltyMonCnt = (pendingMonths.length - index);
-                                    penaltyTotal = (penaltyMonCnt * penaltyAmt);
-                                    penaltyFromTo = `${transformDate(pendingMonths[index])}-${transformDate(pendingMonths[pendingMonths.length - 1])}`;
+                                if (totalMaintanceAmt > 0) {
+                                    transaction.creditAmount -= totalMaintanceAmt;
+                                    totalMaintanceAmt = 0;
                                 }
 
-                                if ((mainAmt + penaltyTotal) <= diffAmt) {
-                                    maintainanceAmt = mainAmt;
-                                    diffAmt = diffAmt - (mainAmt + penaltyTotal);
-                                    tempMaintAmt = tempMaintAmt + (mainAmt + penaltyTotal);
+                                if (balAmount > 0) {
+                                    transaction.creditAmount += balAmount;
+                                    balAmount = 0;
                                 }
 
-                                const newRow = {
-                                    maintainanceAmt,
-                                    date: pendingMonDate,
-                                    penaltyAmt: penaltyTotal,
-                                    penaltyMonCnt,
-                                    penaltyFromTo
+                                for (let i = 0; i < pendingMonths.length; i++) {
+                                    const pendingMon = pendingMonths[i];
+    
+                                    const isMaintnAdd = maintainanceArr.some((obj: any) => obj.date == pendingMon);
+                                    if (!isMaintnAdd) {
+                                        let penaltyAmt = 0;
+                                        let penaltyMonCnt = 0;
+                                        let penaltyFromTo = "";
+
+                                        // console.log("ruleDate=", ruleDate);
+                                        // console.log("tranDate=", tranDate, "\n");
+
+                                        if ((ruleDate.getTime() < tranDate.getTime())) {
+                                            penaltyMonCnt = pendingMonths.length - i;
+                                            penaltyAmt = (penaltyMonCnt * 100);
+                                            penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                        } else
+                                        if ((ruleDate.getTime() < tranDate.getTime())
+                                            && (tranDate.getTime() > pendingMon.getTime())) {
+                                            penaltyMonCnt = pendingMonths.length - i;
+                                            penaltyAmt = (penaltyMonCnt * 100);
+                                            penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                        }
+
+                                        if (((mainAmt + penaltyAmt) <= transaction.creditAmount)) {
+                                            transaction.creditAmount -= (mainAmt + penaltyAmt);
+                                            maintainanceArr.push({
+                                                maintainanceAmt: mainAmt,
+                                                date: pendingMon,
+                                                penaltyAmt: penaltyAmt,
+                                                penaltyMonCnt: penaltyMonCnt,
+                                                penaltyFromTo: penaltyFromTo
+                                            });
+                                        } else {
+                                            balAmount += transaction.creditAmount;
+                                            transaction.creditAmount = 0;
+                                        }
+                                    }
+                                    console.log("creditAmount=", transaction.creditAmount);
                                 }
-                                return newRow;
                             });
 
-                            resolve(maintainance);
+                            console.log("maintainanceArr=", JSON.stringify(maintainanceArr));
+
+                            resolve([]);
                         })
                         .catch((err) => {
                             reject(err);
