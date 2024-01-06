@@ -115,7 +115,7 @@ export class MaintenanceModule {
         });
     }
 
-    private getNoPenaltyAmt(date: any, allTransactions: any) {
+    private getNoPenaltyAmt(pendingMonDate: any, allTransactions: any, tempMaintAmt: number) {
         const newTransactions = allTransactions;
 
         const { ruleDate, latePayDate } = maintenanceRules.latePayment;
@@ -125,23 +125,28 @@ export class MaintenanceModule {
             const tranDate = new Date(obj.transactionDate);
             let noPen = false;
 
+            console.log("trans=", obj);
+            console.log("tempMaintAmt=", tempMaintAmt);
+            console.log("=================================");
+
             if ((tranDate.getTime() < ruleDate.getTime())) {
                 noPen = true;
                 return noPen;
             }
 
-            if (tranDate.getTime() < date.getTime()) {
+            if (tranDate.getTime() < pendingMonDate.getTime()) {
                 noPen = true;
             }
 
             return noPen;
         });
+
         const noPenaltyAmt = noPenaltyMon
             .reduce((prevTran: any, curTran: any) => {
                 return (prevTran + Number(curTran.creditAmount))
             }, 0);
 
-        return noPenaltyAmt;
+        return (noPenaltyAmt);
     }
 
     private precessMaintenance(flatNo: string) {
@@ -162,18 +167,25 @@ export class MaintenanceModule {
                             const allTransactions: any = data[2];
 
                             const { creditAmount } = transactionData;
+                            // console.log("creditAmount=", creditAmount);
                             const { pendingMonths, totalMaintanceAmt } = maintainanceDet;
+                            // console.log("totalMaintanceAmt=", totalMaintanceAmt);
 
                             let diffAmt = creditAmount - totalMaintanceAmt;
+                            let tempMaintAmt = totalMaintanceAmt;
+                            // console.log("diffAmt=", diffAmt);
 
-                            const maintainance = pendingMonths.map((date: any, index: number) => {
+                            const maintainance = pendingMonths.map((pendingMonDate: any, index: number) => {
 
-                                const penaltyAmt = maintenanceRules.latePayment.penaltyAmt;
-                                const noPenaltyAmt = this.getNoPenaltyAmt(date, allTransactions);
+                                const penaltyAmt = maintenanceRules.latePayment.penaltyAmt; //100
+                                // console.log("date=", date);
+                                const noPenaltyAmt = this.getNoPenaltyAmt(pendingMonDate, allTransactions, tempMaintAmt);
 
                                 const newNoPenaltyAmt = noPenaltyAmt - totalMaintanceAmt;
+                                // console.log("newNoPenaltyAmt=", newNoPenaltyAmt);
 
                                 const noPenaltyMonthCnt = Math.trunc(newNoPenaltyAmt / mainAmt);
+                                // console.log("noPenaltyMonthCnt=", noPenaltyMonthCnt);
 
                                 let maintainanceAmt = 0;
                                 let penaltyFromTo = "";
@@ -189,11 +201,12 @@ export class MaintenanceModule {
                                 if ((mainAmt + penaltyTotal) <= diffAmt) {
                                     maintainanceAmt = mainAmt;
                                     diffAmt = diffAmt - (mainAmt + penaltyTotal);
+                                    tempMaintAmt = tempMaintAmt + (mainAmt + penaltyTotal);
                                 }
 
                                 const newRow = {
                                     maintainanceAmt,
-                                    date: date,
+                                    date: pendingMonDate,
                                     penaltyAmt: penaltyTotal,
                                     penaltyMonCnt,
                                     penaltyFromTo
