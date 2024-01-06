@@ -170,6 +170,7 @@ export class MaintenanceModule {
                             console.log("totalMaintanceAmt=", totalMaintanceAmt);
 
                             let maintainanceArr: any = [];
+                            let pendingMainArr: any = [];
 
                             // console.log("allTransactions=", allTransactions);
                             // console.log("================================");
@@ -204,16 +205,24 @@ export class MaintenanceModule {
                                         // console.log("tranDate=", tranDate, "\n");
 
                                         if ((ruleDate.getTime() < tranDate.getTime())) {
-                                            penaltyMonCnt = pendingMonths.length - i;
-                                            penaltyAmt = (penaltyMonCnt * 100);
-                                            penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
-                                        } else
-                                        if ((ruleDate.getTime() < tranDate.getTime())
-                                            && (tranDate.getTime() > pendingMon.getTime())) {
-                                            penaltyMonCnt = pendingMonths.length - i;
-                                            penaltyAmt = (penaltyMonCnt * 100);
-                                            penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                            if ((tranDate.getTime() > pendingMon.getTime())) {
+                                                penaltyMonCnt = pendingMonths.length - i;
+                                                penaltyAmt = (penaltyMonCnt * 100);
+                                                penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                            }
                                         }
+
+                                        // if ((ruleDate.getTime() < tranDate.getTime())) {
+                                        //     penaltyMonCnt = pendingMonths.length - i;
+                                        //     penaltyAmt = (penaltyMonCnt * 100);
+                                        //     penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                        // } else
+                                        // if ((ruleDate.getTime() < tranDate.getTime())
+                                        //     && (tranDate.getTime() > pendingMon.getTime())) {
+                                        //     penaltyMonCnt = pendingMonths.length - i;
+                                        //     penaltyAmt = (penaltyMonCnt * 100);
+                                        //     penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                        // }
 
                                         if (((mainAmt + penaltyAmt) <= transaction.creditAmount)) {
                                             transaction.creditAmount -= (mainAmt + penaltyAmt);
@@ -227,6 +236,21 @@ export class MaintenanceModule {
                                         } else {
                                             balAmount += transaction.creditAmount;
                                             transaction.creditAmount = 0;
+
+                                            const isPendiMaintnAdd = pendingMainArr.find((obj: any) => obj.date == pendingMon);
+                                            const obj = {
+                                                maintainanceAmt: 0,
+                                                date: pendingMon,
+                                                penaltyAmt: penaltyAmt,
+                                                penaltyMonCnt: penaltyMonCnt,
+                                                penaltyFromTo: penaltyFromTo
+                                            };
+
+                                            if (isPendiMaintnAdd) {
+                                                Object.assign(isPendiMaintnAdd, obj);
+                                            } else {
+                                                pendingMainArr.push(obj);
+                                            }
                                         }
                                     }
                                     console.log("creditAmount=", transaction.creditAmount);
@@ -234,6 +258,11 @@ export class MaintenanceModule {
                             });
 
                             console.log("maintainanceArr=", JSON.stringify(maintainanceArr));
+                            console.log("===============");
+
+                            pendingMainArr = pendingMainArr.filter((pendMain: any) =>
+                                !maintainanceArr.some((mainObj: any) => pendMain.date == mainObj.date));
+                            console.log("pendingMainArr=", JSON.stringify(pendingMainArr));
 
                             resolve([]);
                         })
