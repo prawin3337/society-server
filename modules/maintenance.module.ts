@@ -149,32 +149,23 @@ export class MaintenanceModule {
         return new Promise((resolve, reject) => {
             this.deleteZeroMaintenance(flatNo)
                 .then((deleteRec) => {
-                    // console.log("Deleted zero maintenace records:", deleteRec);
+                    console.log("Deleted zero maintenace records:", deleteRec);
 
                     const mainAmt = maintenanceRules.maintenanceDetails.creditAmount; // 1500
-                    const transactionDet = this.fetchTotalCreditAmt(flatNo);
                     const maintainanceDet = this.fetchMaintenanceDetails(flatNo);
                     const transactions = this.fetchAllTransactions(flatNo);
 
-                    Promise.all([transactionDet, maintainanceDet, transactions])
+                    Promise.all([maintainanceDet, transactions])
                         .then((data) => {
-                            const transactionData: any = data[0];
-                            const maintainanceDet: any = data[1];
-                            const allTransactions: any = data[2];
+                            const maintainanceDet: any = data[0];
+                            const allTransactions: any = data[1];
 
                             const { ruleDate, latePayDate } = maintenanceRules.latePayment;
 
-                            // const { creditAmount } = transactionData;
-                            // console.log("creditAmount=", creditAmount);
                             let { pendingMonths, totalMaintanceAmt } = maintainanceDet;
-                            console.log("totalMaintanceAmt=", totalMaintanceAmt);
 
                             let maintainanceArr: any = [];
                             let pendingMainArr: any = [];
-
-                            // console.log("allTransactions=", allTransactions);
-                            // console.log("================================");
-                            // console.log("pendingMonths=", pendingMonths);
 
                             let balAmount = 0;
 
@@ -201,28 +192,13 @@ export class MaintenanceModule {
                                         let penaltyMonCnt = 0;
                                         let penaltyFromTo = "";
 
-                                        // console.log("ruleDate=", ruleDate);
-                                        // console.log("tranDate=", tranDate, "\n");
-
                                         if ((ruleDate.getTime() < tranDate.getTime())) {
                                             if ((tranDate.getTime() > pendingMon.getTime())) {
                                                 penaltyMonCnt = pendingMonths.length - i;
                                                 penaltyAmt = (penaltyMonCnt * 100);
-                                                penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
+                                                penaltyFromTo = `FROM ${transformDate(pendingMon)} TO ${transformDate(pendingMonths[pendingMonths.length - 1])}`
                                             }
                                         }
-
-                                        // if ((ruleDate.getTime() < tranDate.getTime())) {
-                                        //     penaltyMonCnt = pendingMonths.length - i;
-                                        //     penaltyAmt = (penaltyMonCnt * 100);
-                                        //     penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
-                                        // } else
-                                        // if ((ruleDate.getTime() < tranDate.getTime())
-                                        //     && (tranDate.getTime() > pendingMon.getTime())) {
-                                        //     penaltyMonCnt = pendingMonths.length - i;
-                                        //     penaltyAmt = (penaltyMonCnt * 100);
-                                        //     penaltyFromTo = `${transformDate(pendingMon)} ${transformDate(pendingMonths[pendingMonths.length - 1])}`
-                                        // }
 
                                         if (((mainAmt + penaltyAmt) <= transaction.creditAmount)) {
                                             transaction.creditAmount -= (mainAmt + penaltyAmt);
@@ -253,18 +229,24 @@ export class MaintenanceModule {
                                             }
                                         }
                                     }
-                                    console.log("creditAmount=", transaction.creditAmount);
                                 }
                             });
 
-                            console.log("maintainanceArr=", JSON.stringify(maintainanceArr));
-                            console.log("===============");
-
+                            // Remove dup transactions
                             pendingMainArr = pendingMainArr.filter((pendMain: any) =>
                                 !maintainanceArr.some((mainObj: any) => pendMain.date == mainObj.date));
-                            console.log("pendingMainArr=", JSON.stringify(pendingMainArr));
 
-                            resolve([]);
+                            pendingMainArr.forEach((obj: any, i: number) => {
+                                let newObj = {
+                                    maintainanceAmt: 0,
+                                    penaltyMonCnt: (pendingMainArr.length-i),
+                                    penaltyAmt: ((pendingMainArr.length - i)*100),
+                                    penaltyFromTo: `FROM ${transformDate(pendingMainArr[i].date)} TO ${transformDate(pendingMainArr[pendingMainArr.length - 1].date)}`
+                                }
+                                Object.assign(obj, newObj);
+                            });
+
+                            resolve([...maintainanceArr, ...pendingMainArr]);
                         })
                         .catch((err) => {
                             reject(err);
