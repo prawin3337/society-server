@@ -173,13 +173,13 @@ export class MaintenanceModule {
 
                                 const tranDate = transaction.transactionDate;
 
-                                if (totalMaintanceAmt > 0) {
-                                    transaction.creditAmount -= totalMaintanceAmt;
-                                    totalMaintanceAmt = 0;
-                                }
+                                // if (totalMaintanceAmt > 0) {
+                                //     transaction.balanceAmount -= totalMaintanceAmt;
+                                //     totalMaintanceAmt = 0;
+                                // }
 
                                 if (balAmount > 0) {
-                                    transaction.creditAmount += balAmount;
+                                    transaction.balanceAmount += balAmount;
                                     balAmount = 0;
                                 }
 
@@ -200,8 +200,8 @@ export class MaintenanceModule {
                                             }
                                         }
 
-                                        if (((mainAmt + penaltyAmt) <= transaction.creditAmount)) {
-                                            transaction.creditAmount -= (mainAmt + penaltyAmt);
+                                        if (((mainAmt + penaltyAmt) <= transaction.balanceAmount)) {
+                                            transaction.balanceAmount -= (mainAmt + penaltyAmt);
                                             maintainanceArr.push({
                                                 maintainanceAmt: mainAmt,
                                                 date: pendingMon,
@@ -210,8 +210,8 @@ export class MaintenanceModule {
                                                 penaltyFromTo: penaltyFromTo
                                             });
                                         } else {
-                                            balAmount += transaction.creditAmount;
-                                            transaction.creditAmount = 0;
+                                            balAmount += transaction.balanceAmount;
+                                            transaction.balanceAmount = 0;
 
                                             const isPendiMaintnAdd = pendingMainArr.find((obj: any) => obj.date == pendingMon);
                                             const obj = {
@@ -246,7 +246,12 @@ export class MaintenanceModule {
                                 Object.assign(obj, newObj);
                             });
 
-                            resolve([...maintainanceArr, ...pendingMainArr]);
+                            // console.log("allTransactions=", allTransactions);
+
+                            resolve({
+                                maintainance: [...maintainanceArr, ...pendingMainArr],
+                                allTransactions // update balance ammount
+                            });
                         })
                         .catch((err) => {
                             reject(err);
@@ -281,10 +286,16 @@ export class MaintenanceModule {
         return new Promise((resolve, reject) => {
             this.precessMaintenance(flatNo)
                 .then(async (data: any) => {
-                    for (const obj of data) {
+                    const { maintainance, allTransactions } = data;
+                    for (const obj of maintainance) {
                         await this.insertMaintenanceData(flatNo, obj);
                     }
-                    resolve(data);
+
+                    for(const obj of allTransactions) {
+                        await this.transactionModule.updateTransactinBalAmt(obj);
+                    }
+
+                    resolve({});
                 })
                 .catch((err) => { reject(err) });
         });

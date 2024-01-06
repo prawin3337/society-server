@@ -20,7 +20,8 @@ export class TransactionModule {
         ['photo', 'photo'],
         ['user_id', 'userId'],
         ['is_approved', 'isApproved'],
-        ['checker', 'checker']
+        ['checker', 'checker'],
+        ['balance_amount', 'balanceAmount']
     ]);
 
     constructor() { }
@@ -33,11 +34,13 @@ export class TransactionModule {
             
             const query = "INSERT INTO `transaction_master`"
                          +"(`credit_amount`, `description`, `date`, `user_id`, `transaction_code`,"
-                         +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`)"
-                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`, `balance_amount`)"
+                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            const balanceAmount = creditAmount;
 
             const queryParams = [creditAmount, description, systemDate, userId, transactionCode,
-                transactionDate, transactionType, flatNo, receiptNumber, photo];
+                transactionDate, transactionType, flatNo, receiptNumber, photo, balanceAmount];
         
             mysqlConnection.query(query, queryParams, (err: any, row: any) => {
                 if (!err) {
@@ -102,6 +105,21 @@ export class TransactionModule {
                 if (!err) {
                     const result: any = transformMap(row, this.map);
                     res(result);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
+        });
+    }
+
+    updateTransactinBalAmt(params: any) {
+        const { balanceAmount, id} = params;
+        return new Promise((res, rej) => {
+            const query = "update transaction_master set balance_amount=? where id=?";
+            mysqlConnection.query(query, [balanceAmount, id], (err: any, row: any) => {
+                if (!err) {
+                    res(row);
                 } else {
                     console.log(err);
                     rej(err);
