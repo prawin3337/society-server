@@ -127,4 +127,19 @@ export class TransactionModule {
             })
         });
     }
+
+    approveTransaction(params: any) {
+        const { id, isApproved } = params;
+        return new Promise((res, rej) => {
+            const query = "update transaction_master set is_approved=? where id=?";
+            mysqlConnection.query(query, [isApproved, id], (err: any, row: any) => {
+                if (!err) {
+                    res(row);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
+        });
+    }
 }

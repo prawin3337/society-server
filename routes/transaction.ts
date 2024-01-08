@@ -5,6 +5,7 @@ import { ApiResponse } from "../modules/response.module";
 import { AuthModule } from "../modules/auth.module";
 import { body, header, validationResult, param } from 'express-validator';
 import { TransactionModule } from "../modules/transaction.module";
+import { MaintenanceModule } from "../modules/maintenance.module";
 
 const router = Router();
 const multer = require('multer');
@@ -70,5 +71,28 @@ router.get("/all", authModule.authenticateToken, (req: any, res: any, next: any)
             res.status(apiRes.statusCode).json(apiRes.data);
         });
 });
+
+router.post('/approve', authModule.authenticateToken, (req: any, res: any, next: any) => {
+    const userType = req.sessionData.type;
+
+    if (userType != "admin") {
+        const apiRes = new ApiResponse({message: "Not a valid user to update data."}, {});
+        res.status(apiRes.statusCode).json(apiRes.data);
+        return;
+    }
+
+    tranactionModule.approveTransaction(req.body)
+        .then((row) => {
+            new MaintenanceModule()
+                .updateMaintenanceAmt(req.body.flatNo)
+                .then(() => {
+                    const apiRes = new ApiResponse(null, row);
+                    res.status(apiRes.statusCode).json(apiRes.data);
+                });
+        }).catch((err) => {
+            const apiRes = new ApiResponse(err, {});
+            res.status(apiRes.statusCode).json(apiRes.data);
+        });
+})
 
 module.exports = router;
