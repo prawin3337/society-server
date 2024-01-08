@@ -4,6 +4,16 @@ import { transformMap, maintenanceRules, transformDate } from "../util";
 
 export class MaintenanceModule {
 
+    private map = new Map([
+        ['id', 'id'],
+        ['date', 'date'],
+        ['flat_no', 'flatNo'],
+        ['maintainance_amt', 'maintainanceAmt'],
+        ['penalty_amt', 'penaltyAmt'],
+        ['penalty_mon_cnt', 'penaltyMonCnt'],
+        ['penalty_from_to', 'penaltyFromTo']
+    ]);
+
     private transactionModule = new TransactionModule();
 
     lastMaintenanceDate = new Date("nov-01-2021"); // Default maintainance start date.
@@ -115,35 +125,35 @@ export class MaintenanceModule {
         });
     }
 
-    private getNoPenaltyAmt(pendingMonDate: any, allTransactions: any, tempMaintAmt: number) {
-        const newTransactions = allTransactions;
+    // private getNoPenaltyAmt(pendingMonDate: any, allTransactions: any, tempMaintAmt: number) {
+    //     const newTransactions = allTransactions;
 
-        const { ruleDate, latePayDate } = maintenanceRules.latePayment;
-        const validTrans = newTransactions.filter((obj: any) => obj.isApproved == 'y');
+    //     const { ruleDate, latePayDate } = maintenanceRules.latePayment;
+    //     const validTrans = newTransactions.filter((obj: any) => obj.isApproved == 'y');
 
-        const noPenaltyMon = validTrans.filter((obj: any) => {
-            const tranDate = new Date(obj.transactionDate);
-            let noPen = false;
+    //     const noPenaltyMon = validTrans.filter((obj: any) => {
+    //         const tranDate = new Date(obj.transactionDate);
+    //         let noPen = false;
 
-            if ((tranDate.getTime() < ruleDate.getTime())) {
-                noPen = true;
-                return noPen;
-            }
+    //         if ((tranDate.getTime() < ruleDate.getTime())) {
+    //             noPen = true;
+    //             return noPen;
+    //         }
 
-            if (tranDate.getTime() < pendingMonDate.getTime()) {
-                noPen = true;
-            }
+    //         if (tranDate.getTime() < pendingMonDate.getTime()) {
+    //             noPen = true;
+    //         }
 
-            return noPen;
-        });
+    //         return noPen;
+    //     });
 
-        const noPenaltyAmt = noPenaltyMon
-            .reduce((prevTran: any, curTran: any) => {
-                return (prevTran + Number(curTran.creditAmount))
-            }, 0);
+    //     const noPenaltyAmt = noPenaltyMon
+    //         .reduce((prevTran: any, curTran: any) => {
+    //             return (prevTran + Number(curTran.creditAmount))
+    //         }, 0);
 
-        return (noPenaltyAmt);
-    }
+    //     return (noPenaltyAmt);
+    // }
 
     private precessMaintenance(flatNo: string) {
         return new Promise((resolve, reject) => {
@@ -158,7 +168,12 @@ export class MaintenanceModule {
                     Promise.all([maintainanceDet, transactions])
                         .then((data) => {
                             const maintainanceDet: any = data[0];
-                            const allTransactions: any = data[1];
+                            let allTransactions: any = data[1];
+
+                            // remove not apporoved transactions.
+                            allTransactions = allTransactions.filter((tras:any) => {
+                                return tras.isApproved === "y";
+                            });
 
                             const { ruleDate, latePayDate } = maintenanceRules.latePayment;
 
@@ -168,6 +183,8 @@ export class MaintenanceModule {
                             let pendingMainArr: any = [];
 
                             let balAmount = 0;
+
+
 
                             allTransactions.forEach((transaction: any, tranIndex: number) => {
 
@@ -282,7 +299,7 @@ export class MaintenanceModule {
         });
     }
 
-    getMaintenanceAmt(flatNo: string) {
+    updateMaintenanceAmt(flatNo: string) {
         return new Promise((resolve, reject) => {
             this.precessMaintenance(flatNo)
                 .then(async (data: any) => {
@@ -298,6 +315,23 @@ export class MaintenanceModule {
                     resolve({});
                 })
                 .catch((err) => { reject(err) });
+        });
+    }
+
+    getMentainance(flatNo: string, financYear: { fromDate: Date, toDate: Date }) {
+        const { fromDate, toDate } = financYear;
+        return new Promise((res, rej) => {
+            const query = "select * from maintainance_master where flat_no=? and "
+                + "date between ? and ? order by date desc";
+            mysqlConnection.query(query, [flatNo, fromDate, toDate], (err: any, row: any) => {
+                if (!err) {
+                    const result: any = transformMap(row, this.map);
+                    res(result);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
         });
     }
 }
