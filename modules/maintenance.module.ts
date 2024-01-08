@@ -6,7 +6,7 @@ export class MaintenanceModule {
 
     private transactionModule = new TransactionModule();
 
-    lastMaintenanceDate = new Date("dec-01-2021"); // Default maintainance start date.
+    lastMaintenanceDate = new Date("nov-01-2021"); // Default maintainance start date.
 
     constructor() {}
 
