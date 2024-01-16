@@ -7,14 +7,18 @@ const router = Router();
 const authModule = new AuthModule();
 const maintenanceModule = new MaintenanceModule();
 
-router.post('/calculate', (req: any, res: Response) => {
+router.post('/calculate', authModule.authenticateToken, (req: any, res: Response) => {
     const {flatNo} = req.body;
     maintenanceModule
         .updateMaintenanceAmt(flatNo)
         .then((data) => {
-            res.send(data);
+            const apiRes = new ApiResponse(null, data);
+            res.status(apiRes.statusCode).json(apiRes.data);
         })
-        .catch((err) => { res.send(); })
+        .catch((err) => {
+            const apiRes = new ApiResponse(err, {});
+            res.status(apiRes.statusCode).json(apiRes.data);
+        });
 });
 
 router.get("/all", authModule.authenticateToken, (req: any, res: any, next: any) => {
