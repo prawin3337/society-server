@@ -129,10 +129,10 @@ export class TransactionModule {
     }
 
     approveTransaction(params: any) {
-        const { id, isApproved } = params;
+        const { id, isApproved, userId: checker } = params;
         return new Promise((res, rej) => {
-            const query = "update transaction_master set is_approved=? where id=?";
-            mysqlConnection.query(query, [isApproved, id], (err: any, row: any) => {
+            const query = "update transaction_master set is_approved=?, checker=? where id=?";
+            mysqlConnection.query(query, [isApproved, checker, id], (err: any, row: any) => {
                 if (!err) {
                     res(row);
                 } else {

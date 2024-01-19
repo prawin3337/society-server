@@ -74,6 +74,7 @@ router.get("/all", authModule.authenticateToken, (req: any, res: any, next: any)
 
 router.post('/approve', authModule.authenticateToken, (req: any, res: any, next: any) => {
     const userType = req.sessionData.type;
+    const userId = req.sessionData.userId;
 
     if (userType != "admin") {
         const apiRes = new ApiResponse({message: "Not a valid user to update data."}, {});
@@ -81,7 +82,7 @@ router.post('/approve', authModule.authenticateToken, (req: any, res: any, next:
         return;
     }
 
-    tranactionModule.approveTransaction(req.body)
+    tranactionModule.approveTransaction({ ...req.body, userId })
         .then((row) => {
             new MaintenanceModule()
                 .updateMaintenanceAmt(req.body.flatNo)
