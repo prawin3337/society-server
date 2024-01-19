@@ -11,8 +11,7 @@ router.post('/', async (req, res) => {
   if(username !== "appadmin" || password !== "Society@02$") {
     res.status(500).json({
       status: false,
-      message: "Auth error!",
-      // result: result
+      message: "Auth error!"
     });
     return;
   }
