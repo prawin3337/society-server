@@ -52,6 +52,9 @@ app.use('/api/transaction', transaction);
 const maintenance = require('./routes/maintenance');
 app.use('/api/maintenance', maintenance);
 
+const backup = require('./routes/backup');
+app.use('/api/backup', backup);
+
 
 // const userRouter = require('./routes/user');
 // app.use('/user', userRouter);
