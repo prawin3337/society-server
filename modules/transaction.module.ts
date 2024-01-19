@@ -29,18 +29,18 @@ export class TransactionModule {
     addTransaction(params: any) {
         return new Promise((res, rej) => {
             const { flatNo, creditAmount: creditAmount, transactionCode, transactionDate, photo,
-                transactionType, userId, description, isCredit, receiptNumber } = params;
+                transactionType, userId, description, receiptNumber, debitAmount } = params;
             const systemDate = `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`;
             
             const query = "INSERT INTO `transaction_master`"
                          +"(`credit_amount`, `description`, `date`, `user_id`, `transaction_code`,"
-                        +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`, `balance_amount`)"
-                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                         +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`, `balance_amount`, `debit_amount`)"
+                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-            const balanceAmount = creditAmount;
+            const balanceAmount = creditAmount || 0;
 
             const queryParams = [creditAmount, description, systemDate, userId, transactionCode,
-                transactionDate, transactionType, flatNo, receiptNumber, photo, balanceAmount];
+                transactionDate, transactionType, flatNo, receiptNumber, photo, balanceAmount, debitAmount];
         
             mysqlConnection.query(query, queryParams, (err: any, row: any) => {
                 if (!err) {

@@ -30,10 +30,10 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
     const upload = multer({ storage: storage }).single("photo");
     upload(req, res, (err: any) => {
         const { userId } = req.sessionData;
-        const { flatNo, creditAmount, transactionCode, transactionDate, 
+        const { flatNo, creditAmount, debitAmount, transactionCode, transactionDate, 
             transactionType, isCredit, description, receiptNumber } = req.body;
 
-        if (!flatNo || !creditAmount || !transactionCode || !transactionDate || !transactionType) {
+        if (!flatNo || (!creditAmount && !debitAmount) || !transactionCode || !transactionDate || !transactionType) {
             res.status(501).json({ err: "Please fill all requred fields." });
             return;
         } else if (err) {
@@ -43,7 +43,7 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
 
         const { filename: photo } = req.file || "";
         const params = {
-            flatNo, creditAmount, transactionCode, receiptNumber, photo,
+            flatNo, creditAmount, debitAmount, transactionCode, receiptNumber, photo,
             transactionDate, transactionType, userId, isCredit, description};
 
         tranactionModule.addTransaction(params)
