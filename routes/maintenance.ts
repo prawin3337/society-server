@@ -42,6 +42,8 @@ router.post('/calculate/all', (req: any, res: Response) => {
             return;
         }
 
+        data = data.filter((member: any) => member.flatNo !== "0"); // Remove society flat number from maintainance calculation.
+
         let error = null;
         let rec:any = [];
         for (var i = 0; i < data.length; i++) {
@@ -64,7 +66,6 @@ router.post('/calculate/all', (req: any, res: Response) => {
                 break;
             }
         }
-        console.log("update record=", rec);
 
         const apiRes = new ApiResponse(null, rec);
         res.status(apiRes.statusCode).json(apiRes.data);

@@ -84,6 +84,12 @@ router.post('/approve', authModule.authenticateToken, (req: any, res: any, next:
 
     tranactionModule.approveTransaction({ ...req.body, userId })
         .then((row) => {
+            if (req.body.flatNo == "0") {
+                const apiRes = new ApiResponse(null, row);
+                res.status(apiRes.statusCode).json(apiRes.data);
+                return;
+            }
+
             new MaintenanceModule()
                 .updateMaintenanceAmt(req.body.flatNo)
                 .then(() => {
