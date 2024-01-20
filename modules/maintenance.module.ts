@@ -37,7 +37,7 @@ export class MaintenanceModule {
     private fetchAllTransactions(flatNo: string) {
         return new Promise((res, rej) => {
             this.transactionModule
-                .getAllTransactions(flatNo)
+                .getAllMemberTransactions(flatNo)
                 .then((result: any) => {
                     res(result)
                 })

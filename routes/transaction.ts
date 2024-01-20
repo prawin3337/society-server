@@ -1,9 +1,7 @@
 const path = require('path');
 import { Router, Request, Response } from "express";
-import { Member } from "../modules/member.module";
 import { ApiResponse } from "../modules/response.module";
 import { AuthModule } from "../modules/auth.module";
-import { body, header, validationResult, param } from 'express-validator';
 import { TransactionModule } from "../modules/transaction.module";
 import { MaintenanceModule } from "../modules/maintenance.module";
 
@@ -60,16 +58,27 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
 
 router.get("/all", authModule.authenticateToken, (req: any, res: any, next: any) => {
     const flatNo = req.query.flatNo;
-    const financYear = JSON.parse(req.query.financYear);
+    const financYear = req.query.financYear;
 
-    tranactionModule.getTransactions(flatNo, financYear)
-        .then((row) => {
-            const apiRes = new ApiResponse(null, row);
-            res.status(apiRes.statusCode).json(apiRes.data);
-        }).catch((err) => {
-            const apiRes = new ApiResponse(err, {});
-            res.status(apiRes.statusCode).json(apiRes.data);
-        });
+    if (flatNo !== undefined && flatNo !== "undefined" && financYear) {
+        tranactionModule.getMemberTransactions(flatNo, JSON.parse(financYear))
+            .then((row) => {
+                const apiRes = new ApiResponse(null, row);
+                res.status(apiRes.statusCode).json(apiRes.data);
+            }).catch((err) => {
+                const apiRes = new ApiResponse(err, {});
+                res.status(apiRes.statusCode).json(apiRes.data);
+            });
+    } else {
+        tranactionModule.getAllTransactions()
+            .then((row) => {
+                const apiRes = new ApiResponse(null, row);
+                res.status(apiRes.statusCode).json(apiRes.data);
+            }).catch((err) => {
+                const apiRes = new ApiResponse(err, {});
+                res.status(apiRes.statusCode).json(apiRes.data);
+            });
+    }
 });
 
 router.post('/approve', authModule.authenticateToken, (req: any, res: any, next: any) => {
