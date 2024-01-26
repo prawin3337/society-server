@@ -157,4 +157,21 @@ export class TransactionModule {
             })
         });
     }
+
+    deleteTransaction(params: any) {
+        const { id } = params;
+        console.log(id);
+
+        return new Promise((res, rej) => {
+            const query = "delete from transaction_master where id=?";
+            mysqlConnection.query(query, [id], (err: any, row: any) => {
+                if (!err) {
+                    res(row);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
+        });
+    }
 }

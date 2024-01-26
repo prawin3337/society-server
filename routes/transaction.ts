@@ -111,4 +111,15 @@ router.post('/approve', authModule.authenticateToken, (req: any, res: any, next:
         });
 })
 
+router.delete('', authModule.authenticateToken, (req: any, res: any, next: any) => {
+    tranactionModule.deleteTransaction(req.body)
+        .then((row) => {
+            const apiRes = new ApiResponse(null, row);
+            res.status(apiRes.statusCode).json(apiRes.data);
+        }).catch((err) => {
+            const apiRes = new ApiResponse(err, {});
+            res.status(apiRes.statusCode).json(apiRes.data);
+        });
+})
+
 module.exports = router;
