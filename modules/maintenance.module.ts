@@ -334,4 +334,19 @@ export class MaintenanceModule {
             })
         });
     }
+
+    getAllMentainance() {
+        return new Promise((res, rej) => {
+            const query = "select * from maintainance_master order by date desc";
+            mysqlConnection.query(query, [], (err: any, row: any) => {
+                if (!err) {
+                    const result: any = transformMap(row, this.map);
+                    res(result);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
+        });
+    }
 }
