@@ -136,7 +136,7 @@ router.get("/reports", authModule.authenticateToken, (req: any, res: any, next: 
 async function setPendingMaintaincanceDetails(members: any[], financYear: any) {
     let maintainanceDetails: any = [];
     for (const member of members) {
-        const { flatNo } = member;
+        const { flatNo, owner } = member;
         await maintenanceModule.getMentainance(flatNo, JSON.parse(financYear))
             .then((data: any) => {
                 const penaltyData = data.filter(({ penaltyMonCnt, maintainanceAmt }: any) => {
@@ -144,9 +144,10 @@ async function setPendingMaintaincanceDetails(members: any[], financYear: any) {
                 });
 
                 const obj = {
+                    owner,
+                    flatNo: data[0].flatNo,
                     totalPenaltyAmt: 0,
                     penaltyMonCnt: 0,
-                    flatNo: data[0].flatNo,
                     pendingMaintainanceAmt: 0,
                     totalPendingAmt: 0
                 };
@@ -169,7 +170,27 @@ async function setTransactionDetails(maintainanceDetails: any[]): Promise<any> {
         await transactionModule.getAllMemberTransactions(tran.flatNo)
             .then((data: any) => {
                 const d = data.filter((o: any) => o.isApproved === "y");
-                Object.assign(tran, d[d.length-1]);
+                const {
+                    creditAmount: lastTransactionAmount,
+                    description,
+                    transactionCode: lastTransactionCode,
+                    transactionDate: lastTransactionDate,
+                    isApproved,
+                    checker,
+                    balanceAmount,
+                    receiptNumber
+                } = d[d.length - 1];
+
+                Object.assign(tran, {
+                    lastTransactionCode,
+                    lastTransactionDate: new Date(lastTransactionDate).toDateString(), 
+                    lastTransactionAmount,
+                    description,
+                    isApproved,
+                    checker,
+                    balanceAmount,
+                    receiptNumber
+                });
             })
             .catch((err) => {
                 return Promise.reject(err);

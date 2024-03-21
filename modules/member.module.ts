@@ -7,7 +7,7 @@ export class Member {
 
     }
     getMemberIds(calback: CallableFunction):void {
-        mysqlConnection.query("SELECT `flat_no`, `password`, `user_id` FROM `member` where disabled IS NULL OR disabled!='y';", (err: any, row: any) => {
+        mysqlConnection.query("SELECT `flat_no`, `owner`, `password`, `user_id` FROM `member` where disabled IS NULL OR disabled!='y';", (err: any, row: any) => {
 
             if (!err) {
                 row.map((obj: any) => {
@@ -19,7 +19,8 @@ export class Member {
                 const map = new Map([
                     ['flat_no', 'flatNo'],
                     ['is_registered', 'isRegistered'],
-                    ['user_id', 'userId']
+                    ['user_id', 'userId'],
+                    ['owner', 'owner']
                 ]);
                 const result = transformMap(row, map);
                 calback(null, result);
