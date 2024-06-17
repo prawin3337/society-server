@@ -8,7 +8,7 @@ export class AuthModule {
     constructor() {}
 
     generateAccessToken(props: any) { // TODO: add interface
-        return jwt.sign(props, process.env.TOKEN_SECRET, { expiresIn: '8h' });
+        return jwt.sign(props, process.env.TOKEN_SECRET, { expiresIn: '30d' });
     }
 
     authenticateToken(req: any, res: any, next: NextFunction)  {
