@@ -181,7 +181,43 @@ export class TransactionModule {
             mysqlConnection.query(query, (err: any, row: any) => {
                 if (!err) {
                     const result: any = transformMap(row, this.map);
-                    res(result);
+
+                    let approvedCreditAmt = 0;
+                    let nonApprovedCreditAmt = 0;
+                    let approvedDebitAmt = 0;
+                    let nonApprovedDebitAmt = 0;
+
+                    result.forEach((trans: any) => {
+                        if (trans.creditAmount !== null && trans.isApproved === 'y') {
+                            approvedCreditAmt += parseFloat(trans.creditAmount);
+                        }
+
+                        if (trans.creditAmount !== null && trans.isApproved !== 'y') {
+                            nonApprovedCreditAmt += parseFloat(trans.creditAmount);
+                        }
+
+                        if (trans.debitAmount !== null && trans.isApproved === 'y') {
+                            approvedDebitAmt += parseFloat(trans.debitAmount);
+                        }
+
+                        if (trans.debitAmount !== null && trans.isApproved !== 'y') {
+                            nonApprovedDebitAmt += parseFloat(trans.debitAmount);
+                        }
+                    });
+
+                    const currentBalanceAmt = approvedCreditAmt - approvedDebitAmt;
+                    const postApprovelBalanceAmt = (approvedCreditAmt + nonApprovedCreditAmt) - (approvedDebitAmt + nonApprovedDebitAmt);
+                    const recentTransactionDate = result[row.length - 1].transactionDate;
+
+                    res({
+                        approvedCreditAmt,
+                        nonApprovedCreditAmt,
+                        approvedDebitAmt,
+                        nonApprovedDebitAmt,
+                        currentBalanceAmt,
+                        postApprovelBalanceAmt,
+                        recentTransactionDate
+                    });
                 } else {
                     console.log(err);
                     rej(err);
