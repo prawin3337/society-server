@@ -288,8 +288,7 @@ async function sendTransactionDetMail() {
                                         padding: 8px;
                                     }
                                     .red {
-                                        background-color: red;
-                                        color: white
+                                        color: red
                                     }
                                 </style>
                             </head>
