@@ -122,4 +122,50 @@ router.delete('', authModule.authenticateToken, (req: any, res: any, next: any) 
         });
 })
 
+router.get('/overview', authModule.authenticateToken, (req: any, res: any, next: any) => {
+    tranactionModule.getTransactionOverview()
+        .then((row: any) => {
+            let approvedCreditAmt = 0;
+            let nonApprovedCreditAmt = 0;
+            let approvedDebitAmt = 0;
+            let nonApprovedDebitAmt = 0;
+
+            row.forEach((trans:any) => {
+                if (trans.creditAmount !== null && trans.isApproved === 'y') {
+                    approvedCreditAmt += parseFloat(trans.creditAmount);
+                }
+
+                if (trans.creditAmount !== null && trans.isApproved !== 'y') {
+                    nonApprovedCreditAmt += parseFloat(trans.creditAmount);
+                }
+
+                if (trans.debitAmount !== null && trans.isApproved === 'y') {
+                    approvedDebitAmt += parseFloat(trans.debitAmount);
+                }
+
+                if (trans.debitAmount !== null && trans.isApproved !== 'y') {
+                    nonApprovedDebitAmt += parseFloat(trans.debitAmount);
+                }
+            });
+
+            const currentBalanceAmt = approvedCreditAmt - approvedDebitAmt;
+            const postApprovelBalanceAmt = (approvedCreditAmt + nonApprovedCreditAmt) - (approvedDebitAmt + nonApprovedDebitAmt);
+            const recentTransactionDate = row[row.length - 1].transactionDate;
+            
+            const apiRes = new ApiResponse(null, {
+                approvedCreditAmt,
+                nonApprovedCreditAmt,
+                approvedDebitAmt,
+                nonApprovedDebitAmt,
+                currentBalanceAmt,
+                postApprovelBalanceAmt,
+                recentTransactionDate
+            });
+            res.status(apiRes.statusCode).json(apiRes.data);
+        }).catch((err) => {
+            const apiRes = new ApiResponse(err, {});
+            res.status(apiRes.statusCode).json(apiRes.data);
+        });
+});
+
 module.exports = router;
