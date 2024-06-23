@@ -32,3 +32,7 @@ export function transformDate(date: Date) {
     ];
     return `${date.getDate()}-${monthNames[date.getMonth()]}-${date.getFullYear()}`;
 }
+
+export function toMySQLDate(date: Date) {
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}

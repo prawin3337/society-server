@@ -1,8 +1,10 @@
-import { NextFunction, Request, Response } from "express";
-import { transformMap } from "../util";
+// import { NextFunction, Request, Response } from "express";
+import { toMySQLDate, transformMap } from "../util";
+import { GoogleDriveAPI } from "./GoogleDriveAPI";
 const mysqlConnection = require('./db-connection');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+// const jwt = require('jsonwebtoken');
+// const bcrypt = require('bcrypt');
+import { readFile, utils as xlsxUtils, writeFile as xlsxWriteFile } from "xlsx";
 
 export class TransactionModule {
 
@@ -15,6 +17,7 @@ export class TransactionModule {
         ['transaction_code', 'transactionCode'],
         ['transaction_date', 'transactionDate'],
         ['type', 'type'],
+        ['transaction_type', 'transactionType'], // for drive file
         ['receipt_number', 'receiptNumber'],
         ['flat_no', 'flatNo'],
         ['photo', 'photo'],
@@ -23,14 +26,17 @@ export class TransactionModule {
         ['checker', 'checker'],
         ['balance_amount', 'balanceAmount']
     ]);
+    private googleAPI: GoogleDriveAPI;
 
-    constructor() { }
+    constructor() { 
+        this.googleAPI = new GoogleDriveAPI('15Zzrqcl12S2_KDUtD5qlbmddvTHSe0Ix1PmT1twYCQU');
+    }
 
     addTransaction(params: any) {
         return new Promise((res, rej) => {
             const { flatNo, creditAmount: creditAmount, transactionCode, transactionDate, photo,
                 transactionType, userId, description, receiptNumber, debitAmount } = params;
-            const systemDate = `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`;
+            const systemDate = toMySQLDate(new Date());
             
             const query = "INSERT INTO `transaction_master`"
                          +"(`credit_amount`, `description`, `date`, `user_id`, `transaction_code`,"
@@ -224,5 +230,54 @@ export class TransactionModule {
                 }
             })
         });
+    }
+
+    async updateDriveTransactions() {
+        // const fileDetails = {
+        //     fileName: 'society-transaction.xlsx',
+        //     filePath: '/mnt/2ca2e905-ae12-4703-9fdd-6c8691abadaa/APPS/society-managment/server/downloads/drive/'
+        // }
+
+        // Download file from google drive
+        const fileDetails: any = await this.fetchDriveTransactions();
+        const filePath = fileDetails.filePath;
+        console.log("obj= ", fileDetails);
+
+        // Read file data
+        const fileData: any[] = await this.readTransFile(filePath);
+        const dataArr: any = transformMap(fileData, this.map); 
+
+        for await (const [index, row] of dataArr.entries()) {
+            const date = row.date ? new Date(row.date) : new Date();
+            row.transactionDate = toMySQLDate(date);
+
+            await this.addTransaction(row).then(() => {
+                fileData[index]['db_record'] = 'true';
+            }).catch((err) => {
+                fileData[index]['db_record'] = "false";
+                fileData[index]['server_note'] = JSON.stringify(err);
+            });
+        }
+
+        const res = await this.updateDriveTransFile(fileData, fileDetails);
+        console.log(res);
+        return res;
+    }
+
+    async fetchDriveTransactions() {
+        return await this.googleAPI.downloadFile();
+    }
+
+    async readTransFile(filePath: string) {
+        const file = readFile(filePath);
+        return xlsxUtils.sheet_to_json(file.Sheets[file.SheetNames[0]], { raw: false });
+    }
+
+    async updateDriveTransFile(rows: any, fileDetails:any) {
+        const workbook = await readFile(fileDetails.filePath);
+        const worksheet = xlsxUtils.json_to_sheet(rows);
+        workbook.Sheets[workbook.SheetNames[0]] = worksheet;
+        await xlsxWriteFile(workbook, fileDetails.filePath);
+        this.googleAPI.updateFile(fileDetails.filePath, fileDetails.fileName);
     }
 }

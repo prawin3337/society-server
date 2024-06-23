@@ -133,4 +133,17 @@ router.get('/overview', authModule.authenticateToken, (req: any, res: any, next:
         });
 });
 
+router.post('/update-drive-trasactions', (req: Request, res: Response, next: any) => {
+    try {
+        tranactionModule.updateDriveTransactions();
+        res.send("data fetched");
+    }
+    catch(err) {
+        console.log(err);
+        res.send("data not fetched");
+    }
+    
+});
+
+
 module.exports = router;
