@@ -133,14 +133,15 @@ router.get('/overview', authModule.authenticateToken, (req: any, res: any, next:
         });
 });
 
-router.post('/update-drive-trasactions', (req: Request, res: Response, next: any) => {
+router.post('/update-drive-trasactions', async (req: Request, res: Response, next: any) => {
     try {
-        tranactionModule.updateDriveTransactions();
-        res.send("data fetched");
+        const result = await tranactionModule.updateDriveTransactions();
+        const apiRes = new ApiResponse(null, result);
+        res.status(apiRes.statusCode).json(apiRes.data);
     }
     catch(err) {
-        console.log(err);
-        res.send("data not fetched");
+        const apiRes = new ApiResponse(err, {});
+        res.status(apiRes.statusCode).json(apiRes.data);
     }
     
 });

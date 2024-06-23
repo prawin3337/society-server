@@ -24,7 +24,8 @@ export class TransactionModule {
         ['user_id', 'userId'],
         ['is_approved', 'isApproved'],
         ['checker', 'checker'],
-        ['balance_amount', 'balanceAmount']
+        ['balance_amount', 'balanceAmount'],
+        ['db_record', 'dbRecord']
     ]);
     private googleAPI: GoogleDriveAPI;
 
@@ -239,33 +240,31 @@ export class TransactionModule {
         // }
 
         // Download file from google drive
-        const fileDetails: any = await this.fetchDriveTransactions();
+        const fileDetails: any = await this.googleAPI.downloadFile();
         const filePath = fileDetails.filePath;
-        console.log("obj= ", fileDetails);
+        let trasactionUpdateCnt = 0;
 
         // Read file data
         const fileData: any[] = await this.readTransFile(filePath);
-        const dataArr: any = transformMap(fileData, this.map); 
+        const dataArr: any = transformMap(fileData, this.map);
 
         for await (const [index, row] of dataArr.entries()) {
             const date = row.date ? new Date(row.date) : new Date();
             row.transactionDate = toMySQLDate(date);
 
-            await this.addTransaction(row).then(() => {
-                fileData[index]['db_record'] = 'true';
-            }).catch((err) => {
-                fileData[index]['db_record'] = "false";
-                fileData[index]['server_note'] = JSON.stringify(err);
-            });
+            if ([undefined, null, false, 'false'].includes(row.dbRecord)) { // Add new transactions only
+                await this.addTransaction(row).then(() => {
+                    fileData[index]['db_record'] = 'true';
+                    trasactionUpdateCnt++;
+                }).catch((err) => {
+                    fileData[index]['db_record'] = "false";
+                    fileData[index]['server_note'] = JSON.stringify(err);
+                });
+            }
         }
 
         const res = await this.updateDriveTransFile(fileData, fileDetails);
-        console.log(res);
-        return res;
-    }
-
-    async fetchDriveTransactions() {
-        return await this.googleAPI.downloadFile();
+        return { trasactionUpdateCnt };
     }
 
     async readTransFile(filePath: string) {
@@ -278,6 +277,6 @@ export class TransactionModule {
         const worksheet = xlsxUtils.json_to_sheet(rows);
         workbook.Sheets[workbook.SheetNames[0]] = worksheet;
         await xlsxWriteFile(workbook, fileDetails.filePath);
-        this.googleAPI.updateFile(fileDetails.filePath, fileDetails.fileName);
+        return await this.googleAPI.updateFile(fileDetails.filePath, fileDetails.fileName);
     }
 }
