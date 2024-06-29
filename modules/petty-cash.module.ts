@@ -35,6 +35,26 @@ export class PettyCashModule {
         });
     }
 
+    async getSummary() {
+        const trans = await this.getAllTransactions();
+        let totalCreditAmount = 0;
+        let totalDebitAmount = 0;
+        let balanceAmount = 0;
+
+        trans.forEach((row: any) => {
+            if(row.debitAmount !== null) {
+                totalDebitAmount += parseFloat(row.debitAmount);
+            }
+
+            if (row.creditAmount !== null) {
+                totalCreditAmount += parseFloat(row.creditAmount);
+            }
+
+            balanceAmount = totalCreditAmount - totalDebitAmount;
+        });
+        return { totalCreditAmount, totalDebitAmount, balanceAmount };
+    }
+
     addTransaction(params: any) {
         return new Promise((res, rej) => {
             const { flatNo, creditAmount: creditAmount, transactionDate,

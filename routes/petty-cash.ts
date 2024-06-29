@@ -42,7 +42,7 @@ router.post('/', authModule.authenticateToken, (req: any, res: any, next: any) =
         });
 });
 
-router.delete('', authModule.authenticateToken, (req: any, res: any, next: any) => {
+router.delete('/', authModule.authenticateToken, (req: any, res: any, next: any) => {
     pettyCashModule.deleteTransaction(req.body)
         .then((row) => {
             const apiRes = new ApiResponse(null, row);
@@ -51,6 +51,12 @@ router.delete('', authModule.authenticateToken, (req: any, res: any, next: any) 
             const apiRes = new ApiResponse(err, {});
             res.status(apiRes.statusCode).json(apiRes.data);
         });
-})
+});
+
+router.get('/summary', authModule.authenticateToken, async (req: any, res: any, next: any) => {
+    const summary = await pettyCashModule.getSummary();
+    const apiRes = new ApiResponse(null, summary);
+    res.status(apiRes.statusCode).json(apiRes.data);
+});
 
 module.exports = router;
