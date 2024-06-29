@@ -167,7 +167,6 @@ export class TransactionModule {
 
     deleteTransaction(params: any) {
         const { id } = params;
-        console.log(id);
 
         return new Promise((res, rej) => {
             const query = "delete from transaction_master where id=?";

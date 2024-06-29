@@ -55,6 +55,8 @@ app.use('/api/maintenance', maintenance);
 const backup = require('./routes/backup');
 app.use('/api/backup', backup);
 
+const pettyCash = require('./routes/petty-cash');
+app.use('/api/petty-cash', pettyCash);
 
 // const userRouter = require('./routes/user');
 // app.use('/user', userRouter);
