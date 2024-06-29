@@ -5,6 +5,7 @@ const mysqlConnection = require('./db-connection');
 // const jwt = require('jsonwebtoken');
 // const bcrypt = require('bcrypt');
 import { readFile, utils as xlsxUtils, writeFile as xlsxWriteFile } from "xlsx";
+import { PettyCashModule } from "./petty-cash.module";
 
 export class TransactionModule {
 
@@ -25,7 +26,8 @@ export class TransactionModule {
         ['is_approved', 'isApproved'],
         ['checker', 'checker'],
         ['balance_amount', 'balanceAmount'],
-        ['db_record', 'dbRecord']
+        ['db_record', 'dbRecord'],
+        ['add_petty_cash', 'addPettyCash']
     ]);
     private googleAPI: GoogleDriveAPI;
 
@@ -36,18 +38,28 @@ export class TransactionModule {
     addTransaction(params: any) {
         return new Promise((res, rej) => {
             const { flatNo, creditAmount: creditAmount, transactionCode, transactionDate, photo,
-                transactionType, userId, description, receiptNumber, debitAmount } = params;
+                transactionType, userId, description, receiptNumber, debitAmount, addPettyCash } = params;
+
+            let _addPettyCash = 0;
+
+            if (addPettyCash === 'true') {
+                _addPettyCash = 1;
+            }
+
             const systemDate = toMySQLDate(new Date());
             
             const query = "INSERT INTO `transaction_master`"
                          +"(`credit_amount`, `description`, `date`, `user_id`, `transaction_code`,"
-                         +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`, `balance_amount`, `debit_amount`)"
-                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                         +"`transaction_date`, `type`, `flat_no`, `receipt_number`,`photo`, `balance_amount`, `debit_amount`, `add_petty_cash`)"
+                         +" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             const balanceAmount = creditAmount || 0;
 
-            const queryParams = [creditAmount, description, systemDate, userId, transactionCode,
-                transactionDate, transactionType, flatNo, receiptNumber, photo, balanceAmount, debitAmount];
+            const queryParams = [
+                creditAmount, description, systemDate, userId, transactionCode,
+                transactionDate, transactionType, flatNo, receiptNumber, photo, balanceAmount, debitAmount,
+                _addPettyCash
+            ];
         
             mysqlConnection.query(query, queryParams, (err: any, row: any) => {
                 if (!err) {
@@ -150,13 +162,51 @@ export class TransactionModule {
         });
     }
 
-    approveTransaction(params: any) {
+    async approveTransaction(params: any) {
         const { id, isApproved, userId: checker } = params;
+
         return new Promise((res, rej) => {
             const query = "update transaction_master set is_approved=?, checker=? where id=?";
-            mysqlConnection.query(query, [isApproved, checker, id], (err: any, row: any) => {
+            mysqlConnection.query(query, [isApproved, checker, id], async (err: any, row: any) => {
                 if (!err) {
+                    const transDet: any = await this.getTransactionById(id);
+                    if (!transDet.length) {
+                        res(row);
+                        return;
+                    }
+
+                    const {
+                        flatNo, creditAmount, transactionDate, id: insertId,
+                        userId, description, debitAmount, addPettyCash
+                    } = transDet[0];
+
+                    if (addPettyCash !== 1) {
+                        res(row);
+                        return;
+                    }
+
+                    const pettyCashModule = new PettyCashModule();
+                    await pettyCashModule.addTransaction({
+                        flatNo, creditAmount, transactionDate,
+                        userId, description, debitAmount,
+                        transactionRef: `trans-${insertId}`
+                    });
                     res(row);
+                } else {
+                    console.log(err);
+                    rej(err);
+                }
+            })
+        });
+    }
+
+    getTransactionById(id: number) {
+        return new Promise((res, rej) => {
+            const query = "select * from transaction_master where id="+id;
+            mysqlConnection.query(query, (err: any, row: any) => {
+                if (!err) {
+                    const result: any = transformMap(row, this.map);
+                    res(result);
                 } else {
                     console.log(err);
                     rej(err);
