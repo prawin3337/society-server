@@ -5,12 +5,14 @@ import { AuthModule } from "../modules/auth.module";
 import { Member } from "../modules/member.module";
 import { TransactionModule } from "../modules/transaction.module";
 import { Mailer } from "../modules/mailer/Mailer";
+import { PettyCashModule } from "../modules/petty-cash.module";
 
 const router = Router();
 const authModule = new AuthModule();
 const maintenanceModule = new MaintenanceModule();
 const members = new Member();
 const transactionModule = new TransactionModule();
+const pettyCashModule = new PettyCashModule();
 
 router.post('/calculate', authModule.authenticateToken, (req: any, res: Response) => {
     const { flatNo } = req.body;
@@ -216,6 +218,8 @@ const transOverviewTplt = (data: any) => `
             <th>Post-approvel Balance</th>
             <th>Non-Approved Credit Amount</th>
             <th>Non-Approved Debit Amount</th>
+            <th>Petty Cash</th>
+            <th>Approx SBI balance</th>
         </tr>
         <tr>
             <td>
@@ -227,6 +231,8 @@ const transOverviewTplt = (data: any) => `
             <td>${data.postApprovelBalanceAmt}</td>
             <td>${data.nonApprovedCreditAmt}</td>
             <td>${data.nonApprovedDebitAmt}</td>
+            <td>${data.pettyCashSummary.balanceAmount}</td>
+            <td>${data.currentBalanceAmt - data.pettyCashSummary.balanceAmount}</td>
         </tr>
     </table>
 `;
@@ -272,9 +278,11 @@ async function sendTransactionDetMail() {
     await members.getMemberIds(async (err: any, result: any) => {
         if (!err) {
             maintainanceDetails = await getMaintainanceDetails(fYear, result);
+            const pettyCashSummary = await pettyCashModule.getSummary();
 
             transactionModule.getTransactionOverview()
                 .then((data: any) => {
+                    data['pettyCashSummary'] = pettyCashSummary;
                     const html = `
                         <html>
                             <head>
