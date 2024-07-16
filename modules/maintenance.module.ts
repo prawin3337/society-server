@@ -247,6 +247,8 @@ export class MaintenanceModule {
                                         }
                                     }
                                 }
+
+                                transaction.balanceAmount = balAmount;
                             });
 
                             // Remove dup transactions
