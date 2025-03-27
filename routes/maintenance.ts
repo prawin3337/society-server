@@ -224,7 +224,7 @@ const transOverviewTplt = (data: any) => `
         <tr>
             <td>
                 ${new Date(data.recentTransactionDate).getDate()}/
-                ${new Date(data.recentTransactionDate).getMonth()}/
+                ${new Date(data.recentTransactionDate).getMonth()+1}/
                 ${new Date(data.recentTransactionDate).getFullYear()}
             </td>
             <td>${data.currentBalanceAmt}</td>
