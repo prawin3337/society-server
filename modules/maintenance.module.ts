@@ -209,13 +209,13 @@ export class MaintenanceModule {
                                         let penaltyMonCnt = 0;
                                         let penaltyFromTo = "";
 
-                                        if ((ruleDate.getTime() < tranDate.getTime())) {
+                                        // if ((ruleDate.getTime() < tranDate.getTime())) {
                                             if ((tranDate.getTime() > pendingMon.getTime())) {
                                                 penaltyMonCnt = pendingMonths.length - i;
                                                 penaltyAmt = (penaltyMonCnt * 100);
                                                 penaltyFromTo = `FROM ${transformDate(pendingMon)} TO ${transformDate(pendingMonths[pendingMonths.length - 1])}`
                                             }
-                                        }
+                                        // }
 
                                         if (((mainAmt + penaltyAmt) <= transaction.balanceAmount)) {
                                             transaction.balanceAmount -= (mainAmt + penaltyAmt);

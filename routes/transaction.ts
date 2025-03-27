@@ -99,12 +99,12 @@ router.post('/approve', authModule.authenticateToken, (req: any, res: any, next:
                 return;
             }
 
-            new MaintenanceModule()
-                .updateMaintenanceAmt(req.body.flatNo)
-                .then(() => {
-                    const apiRes = new ApiResponse(null, row);
-                    res.status(apiRes.statusCode).json(apiRes.data);
-                });
+            // new MaintenanceModule()
+            //     .updateMaintenanceAmt(req.body.flatNo)
+            //     .then(() => {
+            //         const apiRes = new ApiResponse(null, row);
+            //         res.status(apiRes.statusCode).json(apiRes.data);
+            //     });
         }).catch((err) => {
             const apiRes = new ApiResponse(err, {});
             res.status(apiRes.statusCode).json(apiRes.data);
