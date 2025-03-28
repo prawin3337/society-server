@@ -39,6 +39,14 @@ router.post('/calculate/all', (req: any, res: Response) => {
         return;
     }
 
+    const curDate = new Date();
+    if (curDate.getDate() < 16) {
+        res.send(400).json({
+            status: false,
+            message: 'Unable to calculate the maintenance amount for the 16th day of the month.'
+        })
+    }
+
     members.getMemberIds(async (err: any, data: any) => {
         if (err) {
             const apiRes = new ApiResponse(err, {});
